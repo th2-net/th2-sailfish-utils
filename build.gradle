@@ -81,7 +81,11 @@ dependencies {
     compile "org.slf4j:slf4j-log4j12:${slf4jVersion}"
     compile "org.slf4j:slf4j-api:${slf4jVersion}"
 
-    testImplementation 'junit:junit:4.12'
+    // Use JUnit Jupiter API for testing.
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.2'
+
+    // Use JUnit Jupiter Engine for testing.
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.6.2'
 }
 
 publishing {
@@ -90,6 +94,11 @@ publishing {
             artifactId 'th2-sailfish-utils'
         }
     }
+}
+
+test {
+    // Use junit platform for unit tests
+    useJUnitPlatform()
 }
 
 

@@ -19,6 +19,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import com.exactpro.sf.common.impl.messages.xml.configuration.JavaType;
+import org.apache.commons.lang3.BooleanUtils;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,6 +41,9 @@ import com.exactpro.th2.infra.grpc.MessageFilter;
 import com.exactpro.th2.infra.grpc.Value;
 import com.exactpro.th2.infra.grpc.ValueFilter;
 import com.google.protobuf.InvalidProtocolBufferException;
+
+import static com.exactpro.sf.common.impl.messages.xml.configuration.JavaType.JAVA_LANG_BOOLEAN;
+import static java.util.Objects.requireNonNull;
 
 public class ProtoToIMessageConverter {
     private static final Logger logger = LoggerFactory.getLogger(ProtoToIMessageConverter.class.getName());
@@ -61,10 +66,12 @@ public class ProtoToIMessageConverter {
 
     @NotNull
     public MessageWrapper fromProtoMessage(Message receivedMessage, boolean useDictionary) {
+        String messageType = requireNonNull(receivedMessage.getMetadata().getMessageType(),
+                "'Metadata.messageType' must not be null");
         IMessage convertedMessage = useDictionary
                 ? convertByDictionary(receivedMessage.getFieldsMap(),
-                        dictionary.getMessages().get(receivedMessage.getMetadata().getMessageType()))
-                : convertWithoutDictionary(receivedMessage.getFieldsMap(), receivedMessage.getMetadata().getMessageType());
+                        dictionary.getMessages().get(messageType))
+                : convertWithoutDictionary(receivedMessage.getFieldsMap(), messageType);
         MessageWrapper messageWrapper = new MessageWrapper(convertedMessage);
         messageWrapper.setMessageId(receivedMessage.getMetadata().getId());
         return messageWrapper;
@@ -110,18 +117,18 @@ public class ProtoToIMessageConverter {
                 .collect(Collectors.toList());
     }
 
-    private IMessage convertByDictionary(Message message) {
-        String messageType = message.getMetadata().getMessageType();
+    private IMessage convertByDictionary(Message message, String messageType) {
         IMessageStructure messageStructure = dictionary.getMessages().get(messageType);
         return convertByDictionary(message.getFieldsMap(), messageStructure);
     }
+
     private IMessage convertByDictionary(Map<String, Value> fieldsMap, IFieldStructure messageStructure) {
         IMessage message = messageFactory.createMessage(dictionaryURI, messageStructure.getName());
         for (Map.Entry<String, Value> fieldEntry : fieldsMap.entrySet()) {
             String fieldName = fieldEntry.getKey();
             Value fieldValue = fieldEntry.getValue();
             IFieldStructure fieldStructure = messageStructure.getFields().get(fieldName);
-            tryToTraverseField(message, fieldName, fieldValue, fieldStructure);
+            traverseField(message, fieldName, fieldValue, fieldStructure);
         }
         logger.debug("Converted message: {}", message);
         return message;
@@ -154,7 +161,7 @@ public class ProtoToIMessageConverter {
                 .collect(Collectors.toList());
     }
 
-    private void tryToTraverseField(IMessage message, String fieldName, Value value, IFieldStructure fieldStructure) {
+    private void traverseField(IMessage message, String fieldName, Value value, IFieldStructure fieldStructure) {
         if (fieldStructure != null) {
             Object convertedValue = fieldStructure.isComplex()
                     ? processComplex(value, fieldStructure)
@@ -175,12 +182,29 @@ public class ProtoToIMessageConverter {
 
     private Object convertToTarget(Value value, IFieldStructure fieldStructure) {
         try {
-            return MultiConverter.convert(value.getSimpleValue(),
-                    Class.forName(fieldStructure.getJavaType().value()));
+            String simpleValue = value.getSimpleValue();
+            if (fieldStructure.isEnum()) {
+                simpleValue = convertEnumValue(fieldStructure, simpleValue);
+            }
+            // TODO may be place its logic into the MultiConverter
+            if (JAVA_LANG_BOOLEAN.equals(fieldStructure.getJavaType())) {
+                return BooleanUtils.toBooleanObject(simpleValue);
+            }
+            return MultiConverter.convert(simpleValue,
+                        Class.forName(fieldStructure.getJavaType().value()));
         } catch (ClassNotFoundException e) {
             logger.error("Could not convert {} value", value, e);
             throw new RuntimeException(e);
         }
+    }
+
+    private String convertEnumValue(IFieldStructure fieldStructure, String value) {
+        for(String enumKey : fieldStructure.getValues().keySet()) {
+            if (enumKey.equals(value)) {
+                return fieldStructure.getValues().get(enumKey).getValue();
+            }
+        }
+        return value;
     }
 
     private Object processComplex(Value value, IFieldStructure fieldStructure) {
@@ -193,7 +217,7 @@ public class ProtoToIMessageConverter {
     private List<IMessage> convertComplexList(ListValue listValue, IFieldStructure fieldStructure) {
         return listValue.getValuesList()
                 .stream()
-                .map(value -> convertByDictionary(value.getMessageValue()))
+                .map(value -> convertByDictionary(value.getMessageValue(), fieldStructure.getReferenceName()))
                 .collect(Collectors.toList());
     }
 }
