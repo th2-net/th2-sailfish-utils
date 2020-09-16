@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~  Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+  ~
+  ~  Licensed under the Apache License, Version 2.0 (the "License");
+  ~  you may not use this file except in compliance with the License.
+  ~  You may obtain a copy of the License at
+  ~
+  ~      http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~  Unless required by applicable law or agreed to in writing, software
+  ~  distributed under the License is distributed on an "AS IS" BASIS,
+  ~  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~  See the License for the specific language governing permissions and
+  ~  limitations under the License.
+  -->
+<dictionary xmlns="http://exactprosystems.com/dictionary" name="dictionary">
+    <fields>
+        <field id="enumIntId" name="enumInt" type="java.lang.Integer">
+            <value name="ONE">1</value>
+            <value name="MINUS_ONE">-1</value>
+        </field>
+    </fields>
+    <messages>
+        <message id="SubMessageId" name="SubMessage">
+            <field name="field1" type="java.lang.String"/>
+            <field name="field2" type="java.lang.String"/>
+        </message>
+        <message id="SubComplexListId" name="SubComplexList">
+            <field name="list" reference="SubMessageId" isCollection="true"/>
+        </message>
+        <message id="RootWithNestedComplexId" name="RootWithNestedComplex">
+            <field name="string" type="java.lang.String"/>
+            <field name="byte" type="java.lang.Byte"/>
+            <field name="short" type="java.lang.Short"/>
+            <field name="int" type="java.lang.Integer"/>
+            <field name="long" type="java.lang.Long"/>
+            <field name="float" type="java.lang.Float"/>
+            <field name="double" type="java.lang.Double"/>
+            <field name="decimal" type="java.math.BigDecimal"/>
+            <field name="char" type="java.lang.Character"/>
+            <field name="bool" type="java.lang.Boolean"/>
+            <field name="boolY" type="java.lang.Boolean"/>
+            <field name="boolN" type="java.lang.Boolean"/>
+            <field name="complexList" reference="SubComplexListId"/>
+            <field name="complex" reference="SubMessageId"/>
+            <field name="enumInt" reference="enumIntId"/>
+        </message>
+    </messages>
+</dictionary>
