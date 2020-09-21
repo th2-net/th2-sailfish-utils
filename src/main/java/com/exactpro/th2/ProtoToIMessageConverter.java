@@ -67,6 +67,8 @@ public class ProtoToIMessageConverter {
 
     @NotNull
     public MessageWrapper fromProtoMessage(Message receivedMessage, boolean useDictionary) {
+        logger.debug("Converting message {} {} dictionary", receivedMessage, useDictionary ? "using" : "without");
+
         String messageType = requireNonNull(receivedMessage.getMetadata().getMessageType(),
                 "'Metadata.messageType' must not be null");
         if (messageType.isBlank()) {
@@ -81,10 +83,13 @@ public class ProtoToIMessageConverter {
     }
 
     public IMessage fromProtoFilter(MessageFilter messageFilter, String messageName) {
+        logger.debug("Converting filter {} as {}", messageFilter, messageName);
         IMessage message = messageFactory.createMessage(dictionaryURI, messageName);
         for (Map.Entry<String, ValueFilter> filterEntry : messageFilter.getFieldsMap().entrySet()) {
             message.addField(filterEntry.getKey(), traverseFilterField(filterEntry.getKey(), filterEntry.getValue()));
         }
+
+        logger.debug("Filter '{}' converted {}", messageName, message);
         return message;
     }
 
@@ -152,7 +157,7 @@ public class ProtoToIMessageConverter {
             Object traverseField = traverseField(fieldName, fieldValue);
             message.addField(fieldName, traverseField);
         }
-        logger.debug("Converted message: {}", message);
+        logger.debug("Converted message without dictionary: {}", message);
         return message;
     }
 
