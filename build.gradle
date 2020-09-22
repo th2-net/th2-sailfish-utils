@@ -1,17 +1,15 @@
 plugins {
+    id 'java'
+    id 'java-library'
+    id 'maven-publish'
     id "com.jfrog.artifactory" version '4.15.1'
 }
-
-apply plugin: 'java'
-apply plugin: 'maven-publish'
-apply plugin: 'com.jfrog.artifactory'
 
 ext {
     sharedDir           = file("${project.rootDir}/shared")
     slf4jVersion        = '1.7.30'
 
     sailfishVersion     = '3.2-SNAPSHOT'
-    th2Version          = '1.3.0'
 }
 
 repositories {
@@ -39,16 +37,17 @@ repositories {
 group = 'com.exactpro.th2'
 version = release_version
 
-sourceCompatibility = 1.11
-targetCompatibility = 1.11
+sourceCompatibility = 11
+targetCompatibility = 11
 
 dependencies {
-    compile "com.exactpro.sf:sailfish-core:${sailfishVersion}"
+    api platform('com.exactpro.th2:th2-bom:1.0.+')
+    implementation 'com.exactpro.th2:th2-common'
 
-    compile 'com.exactpro.th2:th2-common:1.4.1'
+    implementation "com.exactpro.sf:sailfish-core:${sailfishVersion}"
 
-    compile "org.slf4j:slf4j-log4j12:${slf4jVersion}"
-    compile "org.slf4j:slf4j-api:${slf4jVersion}"
+    implementation "org.slf4j:slf4j-log4j12:${slf4jVersion}"
+    implementation "org.slf4j:slf4j-api:${slf4jVersion}"
 
     // Use JUnit Jupiter API for testing.
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.2'
