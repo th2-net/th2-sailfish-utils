@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-package com.exactpro.th2;
+package com.exactpro.th2.sailfish.utils;
 
 import com.exactpro.sf.common.messages.IMessage;
 import com.exactpro.sf.common.messages.structures.IDictionaryStructure;
@@ -26,8 +26,6 @@ import com.exactpro.th2.infra.grpc.ListValue;
 import com.exactpro.th2.infra.grpc.Message;
 import com.exactpro.th2.infra.grpc.MessageMetadata;
 import com.exactpro.th2.infra.grpc.Value;
-import com.exactpro.th2.sailfish.utils.MessageWrapper;
-import com.exactpro.th2.sailfish.utils.ProtoToIMessageConverter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.jetbrains.annotations.NotNull;
@@ -50,7 +48,7 @@ import static com.exactpro.sf.scriptrunner.StatusType.CONDITIONALLY_FAILED;
 import static com.exactpro.sf.scriptrunner.StatusType.CONDITIONALLY_PASSED;
 import static com.exactpro.sf.scriptrunner.StatusType.FAILED;
 import static com.exactpro.sf.scriptrunner.StatusType.PASSED;
-import static com.exactpro.th2.Messages.getSimpleFieldCountRecursive;
+import static com.exactpro.th2.sailfish.utils.Messages.getSimpleFieldCountRecursive;
 
 class ProtoToIMessageConverterTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(ProtoToIMessageConverterTest.class);

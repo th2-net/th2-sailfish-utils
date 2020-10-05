@@ -13,13 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ******************************************************************************/
-package com.exactpro.th2;
+package com.exactpro.th2.sailfish.utils;
 
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import com.exactpro.sf.common.impl.messages.xml.configuration.JavaType;
 import org.apache.commons.lang3.BooleanUtils;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
