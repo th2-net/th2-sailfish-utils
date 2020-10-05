@@ -26,6 +26,8 @@ import com.exactpro.th2.infra.grpc.ListValue;
 import com.exactpro.th2.infra.grpc.Message;
 import com.exactpro.th2.infra.grpc.MessageMetadata;
 import com.exactpro.th2.infra.grpc.Value;
+import com.exactpro.th2.sailfish.utils.MessageWrapper;
+import com.exactpro.th2.sailfish.utils.ProtoToIMessageConverter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.jetbrains.annotations.NotNull;
