@@ -15,12 +15,16 @@
  ******************************************************************************/
 package com.exactpro.th2.sailfish.utils;
 
+import static com.exactpro.sf.common.impl.messages.xml.configuration.JavaType.JAVA_LANG_BOOLEAN;
+import static java.util.Objects.requireNonNull;
+
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.BooleanUtils;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,19 +45,16 @@ import com.exactpro.th2.common.grpc.Value;
 import com.exactpro.th2.common.grpc.ValueFilter;
 import com.google.protobuf.InvalidProtocolBufferException;
 
-import static com.exactpro.sf.common.impl.messages.xml.configuration.JavaType.JAVA_LANG_BOOLEAN;
-import static java.util.Objects.requireNonNull;
-
 public class ProtoToIMessageConverter {
     private static final Logger logger = LoggerFactory.getLogger(ProtoToIMessageConverter.class.getName());
     private final IMessageFactoryProxy messageFactory;
     private final IDictionaryStructure dictionary;
     private final SailfishURI dictionaryURI;
 
-    public ProtoToIMessageConverter(IMessageFactoryProxy messageFactory,
-                                    IDictionaryStructure dictionaryStructure,
+    public ProtoToIMessageConverter(@NotNull IMessageFactoryProxy messageFactory,
+                                    @Nullable IDictionaryStructure dictionaryStructure,
                                     SailfishURI dictionaryURI) {
-        this.messageFactory = messageFactory;
+        this.messageFactory = requireNonNull(messageFactory, "'Message factory' parameter");
         this.dictionary = dictionaryStructure;
         this.dictionaryURI = dictionaryURI;
     }
@@ -65,11 +66,15 @@ public class ProtoToIMessageConverter {
 
     @NotNull
     public MessageWrapper fromProtoMessage(Message receivedMessage, boolean useDictionary) {
+        logger.debug("Converting message {} {} dictionary", receivedMessage, useDictionary ? "using" : "without");
+
         String messageType = requireNonNull(receivedMessage.getMetadata().getMessageType(),
                 "'Metadata.messageType' must not be null");
+        if (messageType.isBlank()) {
+            throw new IllegalArgumentException("Cannot convert message with blank message type");
+        }
         IMessage convertedMessage = useDictionary
-                ? convertByDictionary(receivedMessage.getFieldsMap(),
-                        dictionary.getMessages().get(messageType))
+                ? convertByDictionary(receivedMessage.getFieldsMap(), messageType)
                 : convertWithoutDictionary(receivedMessage.getFieldsMap(), messageType);
         MessageWrapper messageWrapper = new MessageWrapper(convertedMessage);
         messageWrapper.setMessageId(receivedMessage.getMetadata().getId());
@@ -77,10 +82,13 @@ public class ProtoToIMessageConverter {
     }
 
     public IMessage fromProtoFilter(MessageFilter messageFilter, String messageName) {
+        logger.debug("Converting filter {} as {}", messageFilter, messageName);
         IMessage message = messageFactory.createMessage(dictionaryURI, messageName);
         for (Map.Entry<String, ValueFilter> filterEntry : messageFilter.getFieldsMap().entrySet()) {
             message.addField(filterEntry.getKey(), traverseFilterField(filterEntry.getKey(), filterEntry.getValue()));
         }
+
+        logger.debug("Filter '{}' converted {}", messageName, message);
         return message;
     }
 
@@ -116,12 +124,19 @@ public class ProtoToIMessageConverter {
                 .collect(Collectors.toList());
     }
 
-    private IMessage convertByDictionary(Message message, String messageType) {
-        IMessageStructure messageStructure = dictionary.getMessages().get(messageType);
-        return convertByDictionary(message.getFieldsMap(), messageStructure);
+    private IMessage convertByDictionary(Map<String, Value> fieldsMap, String messageType) {
+        if (dictionary == null) {
+            throw new IllegalStateException("Cannot convert using dictionary without dictionary set");
+        }
+        IMessageStructure messageStructure = requireNonNull(dictionary.getMessages().get(messageType), "Unknown message: " + messageType);
+        return convertByDictionary(fieldsMap, messageStructure);
     }
 
-    private IMessage convertByDictionary(Map<String, Value> fieldsMap, IFieldStructure messageStructure) {
+    private IMessage convertByDictionary(Message message, String messageType) {
+        return convertByDictionary(message.getFieldsMap(), messageType);
+    }
+
+    private IMessage convertByDictionary(Map<String, Value> fieldsMap, @NotNull IFieldStructure messageStructure) {
         IMessage message = messageFactory.createMessage(dictionaryURI, messageStructure.getName());
         for (Map.Entry<String, Value> fieldEntry : fieldsMap.entrySet()) {
             String fieldName = fieldEntry.getKey();
@@ -129,7 +144,7 @@ public class ProtoToIMessageConverter {
             IFieldStructure fieldStructure = messageStructure.getFields().get(fieldName);
             traverseField(message, fieldName, fieldValue, fieldStructure);
         }
-        logger.debug("Converted message: {}", message);
+        logger.debug("Converted message by dictionary: {}", message);
         return message;
     }
 
@@ -141,7 +156,7 @@ public class ProtoToIMessageConverter {
             Object traverseField = traverseField(fieldName, fieldValue);
             message.addField(fieldName, traverseField);
         }
-        logger.debug("Converted message: {}", message);
+        logger.debug("Converted message without dictionary: {}", message);
         return message;
     }
 
@@ -186,7 +201,7 @@ public class ProtoToIMessageConverter {
                 simpleValue = convertEnumValue(fieldStructure, simpleValue);
             }
             // TODO may be place its logic into the MultiConverter
-            if (JAVA_LANG_BOOLEAN.equals(fieldStructure.getJavaType())) {
+            if (fieldStructure.getJavaType() == JAVA_LANG_BOOLEAN) {
                 return BooleanUtils.toBooleanObject(simpleValue);
             }
             return MultiConverter.convert(simpleValue,
