@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-package com.exactpro.th2;
+package com.exactpro.th2.sailfish.utils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;

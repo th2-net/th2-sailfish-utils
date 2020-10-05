@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-package com.exactpro.th2;
+package com.exactpro.th2.sailfish.utils;
 
 import com.exactpro.sf.common.messages.IMessage;
 

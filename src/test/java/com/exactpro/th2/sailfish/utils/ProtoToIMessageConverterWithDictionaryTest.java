@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-package com.exactpro.th2;
+package com.exactpro.th2.sailfish.utils;
 
 import com.exactpro.sf.common.messages.IMessage;
 import com.exactpro.sf.common.messages.structures.IDictionaryStructure;
@@ -49,9 +49,9 @@ import static com.exactpro.sf.scriptrunner.StatusType.CONDITIONALLY_FAILED;
 import static com.exactpro.sf.scriptrunner.StatusType.CONDITIONALLY_PASSED;
 import static com.exactpro.sf.scriptrunner.StatusType.FAILED;
 import static com.exactpro.sf.scriptrunner.StatusType.PASSED;
-import static com.exactpro.th2.Messages.getSimpleFieldCountRecursive;
+import static com.exactpro.th2.sailfish.utils.Messages.getSimpleFieldCountRecursive;
 
-class ProtoToIMessageConverterWithDictonaryTest extends AbstractProtoToIMessageConverterTest {
+class ProtoToIMessageConverterWithDictionaryTest extends AbstractProtoToIMessageConverterTest {
     private static SailfishURI dictionaryURI;
     private static ProtoToIMessageConverter converter;
 

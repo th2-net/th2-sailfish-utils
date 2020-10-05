@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-package com.exactpro.th2;
+package com.exactpro.th2.sailfish.utils;
 
 import static com.exactpro.sf.comparison.ComparisonUtil.getResultCount;
 import static com.exactpro.sf.comparison.MessageComparator.compare;
@@ -22,7 +22,7 @@ import static com.exactpro.sf.scriptrunner.StatusType.CONDITIONALLY_FAILED;
 import static com.exactpro.sf.scriptrunner.StatusType.CONDITIONALLY_PASSED;
 import static com.exactpro.sf.scriptrunner.StatusType.FAILED;
 import static com.exactpro.sf.scriptrunner.StatusType.PASSED;
-import static com.exactpro.th2.Messages.getSimpleFieldCountRecursive;
+import static com.exactpro.th2.sailfish.utils.Messages.getSimpleFieldCountRecursive;
 
 import java.util.List;
 import java.util.Map;
@@ -37,7 +37,6 @@ import com.exactpro.sf.common.messages.IMessage;
 import com.exactpro.sf.comparison.ComparatorSettings;
 import com.exactpro.sf.comparison.ComparisonResult;
 import com.exactpro.th2.infra.grpc.ListValue;
-import com.exactpro.th2.infra.grpc.ListValue.Builder;
 import com.exactpro.th2.infra.grpc.Message;
 import com.exactpro.th2.infra.grpc.MessageMetadata;
 import com.exactpro.th2.infra.grpc.Value;
