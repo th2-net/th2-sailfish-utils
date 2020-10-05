@@ -33,12 +33,12 @@ import com.exactpro.sf.common.util.StringUtil;
 import com.exactpro.sf.comparison.conversion.MultiConverter;
 import com.exactpro.sf.configuration.suri.SailfishURI;
 import com.exactpro.sf.externalapi.IMessageFactoryProxy;
-import com.exactpro.th2.infra.grpc.ListValue;
-import com.exactpro.th2.infra.grpc.ListValueFilter;
-import com.exactpro.th2.infra.grpc.Message;
-import com.exactpro.th2.infra.grpc.MessageFilter;
-import com.exactpro.th2.infra.grpc.Value;
-import com.exactpro.th2.infra.grpc.ValueFilter;
+import com.exactpro.th2.common.grpc.ListValue;
+import com.exactpro.th2.common.grpc.ListValueFilter;
+import com.exactpro.th2.common.grpc.Message;
+import com.exactpro.th2.common.grpc.MessageFilter;
+import com.exactpro.th2.common.grpc.Value;
+import com.exactpro.th2.common.grpc.ValueFilter;
 import com.google.protobuf.InvalidProtocolBufferException;
 
 import static com.exactpro.sf.common.impl.messages.xml.configuration.JavaType.JAVA_LANG_BOOLEAN;

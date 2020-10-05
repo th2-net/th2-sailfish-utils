@@ -22,10 +22,10 @@ import com.exactpro.sf.common.messages.structures.loaders.XmlDictionaryStructure
 import com.exactpro.sf.comparison.ComparatorSettings;
 import com.exactpro.sf.comparison.ComparisonResult;
 import com.exactpro.sf.configuration.suri.SailfishURI;
-import com.exactpro.th2.infra.grpc.ListValue;
-import com.exactpro.th2.infra.grpc.Message;
-import com.exactpro.th2.infra.grpc.MessageMetadata;
-import com.exactpro.th2.infra.grpc.Value;
+import com.exactpro.th2.common.grpc.ListValue;
+import com.exactpro.th2.common.grpc.Message;
+import com.exactpro.th2.common.grpc.MessageMetadata;
+import com.exactpro.th2.common.grpc.Value;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.jetbrains.annotations.NotNull;

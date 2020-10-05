@@ -20,9 +20,9 @@ import java.util.List;
 import org.jetbrains.annotations.NotNull;
 
 import com.exactpro.sf.common.messages.IMessage;
-import com.exactpro.th2.infra.grpc.ListValue;
-import com.exactpro.th2.infra.grpc.Message;
-import com.exactpro.th2.infra.grpc.Value;
+import com.exactpro.th2.common.grpc.ListValue;
+import com.exactpro.th2.common.grpc.Message;
+import com.exactpro.th2.common.grpc.Value;
 
 public class IMessageToProtoConverter {
     public Message.Builder toProtoMessage(IMessage message) {

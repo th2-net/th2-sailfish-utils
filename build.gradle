@@ -7,7 +7,6 @@ plugins {
 
 ext {
     sharedDir           = file("${project.rootDir}/shared")
-    slf4jVersion        = '1.7.30'
 
     sailfishVersion     = '3.2-SNAPSHOT'
 }
@@ -41,13 +40,16 @@ sourceCompatibility = 11
 targetCompatibility = 11
 
 dependencies {
-    api platform('com.exactpro.th2:th2-bom:2.0.+')
+    api platform('com.exactpro.th2:bom:2.0.+')
     implementation 'com.exactpro.th2:common'
+    implementation 'com.exactpro.th2:grpc-common'
 
     implementation "com.exactpro.sf:sailfish-core:${sailfishVersion}"
 
-    implementation "org.slf4j:slf4j-log4j12:${slf4jVersion}"
-    implementation "org.slf4j:slf4j-api:${slf4jVersion}"
+    implementation "org.slf4j:slf4j-log4j12"
+    implementation "org.slf4j:slf4j-api"
+
+    implementation "com.google.protobuf:protobuf-java-util"
 
     // Use JUnit Jupiter API for testing.
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.2'

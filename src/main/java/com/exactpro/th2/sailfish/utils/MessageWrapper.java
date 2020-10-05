@@ -21,7 +21,7 @@ import com.exactpro.sf.common.messages.FieldMetaData;
 import com.exactpro.sf.common.messages.IFieldInfo;
 import com.exactpro.sf.common.messages.IMessage;
 import com.exactpro.sf.common.messages.MsgMetaData;
-import com.exactpro.th2.infra.grpc.MessageID;
+import com.exactpro.th2.common.grpc.MessageID;
 
 public class MessageWrapper implements IMessage {
     private final IMessage source;
