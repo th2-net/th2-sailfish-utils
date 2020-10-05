@@ -24,6 +24,7 @@ import com.exactpro.sf.comparison.ComparisonResult;
 import com.exactpro.sf.configuration.suri.SailfishURI;
 import com.exactpro.th2.infra.grpc.ListValue;
 import com.exactpro.th2.infra.grpc.Message;
+import com.exactpro.th2.infra.grpc.Message.Builder;
 import com.exactpro.th2.infra.grpc.MessageMetadata;
 import com.exactpro.th2.infra.grpc.Value;
 import com.google.common.collect.ImmutableList;
@@ -50,8 +51,7 @@ import static com.exactpro.sf.scriptrunner.StatusType.FAILED;
 import static com.exactpro.sf.scriptrunner.StatusType.PASSED;
 import static com.exactpro.th2.sailfish.utils.Messages.getSimpleFieldCountRecursive;
 
-class ProtoToIMessageConverterTest {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ProtoToIMessageConverterTest.class);
+class ProtoToIMessageConverterWithDictionaryTest extends AbstractProtoToIMessageConverterTest {
     private static SailfishURI dictionaryURI;
     private static ProtoToIMessageConverter converter;
 
@@ -76,14 +76,22 @@ class ProtoToIMessageConverterTest {
         assertPassed(expectedIMessage, actualIMessage);
     }
 
-    private void assertPassed(IMessage expected, IMessage actual) {
-        ComparisonResult comparisonResult = compare(actual, expected, new ComparatorSettings());
-        LOGGER.debug("Message comparison result: {}", comparisonResult);
-        Assertions.assertEquals(getSimpleFieldCountRecursive(expected),
-                getResultCount(comparisonResult, PASSED));
-        Assertions.assertEquals(0, getResultCount(comparisonResult, FAILED));
-        Assertions.assertEquals(0, getResultCount(comparisonResult, CONDITIONALLY_FAILED));
-        Assertions.assertEquals(0, getResultCount(comparisonResult, CONDITIONALLY_PASSED));
+    @Test
+    void convertUnknownMessageThrowException() {
+        var nullPointerException = Assertions.assertThrows(
+                NullPointerException.class,
+                () -> converter.fromProtoMessage(createMessageBuilder("SomeUnknownMessage").build(), true),
+                "Conversion for unknown message should fails");
+        Assertions.assertEquals("Unknown message: SomeUnknownMessage", nullPointerException.getMessage());
+    }
+
+    @Test
+    void convertMessageWithoutMessageTypeThrowException() {
+        var argumentException = Assertions.assertThrows(
+                IllegalArgumentException.class,
+                () -> converter.fromProtoMessage(Message.newBuilder().build(), true),
+                "Conversion for message without message type should fails");
+        Assertions.assertEquals("Cannot convert message with blank message type", argumentException.getMessage());
     }
 
     private MessageWrapper createExpectedIMessage() {
@@ -115,10 +123,7 @@ class ProtoToIMessageConverterTest {
     }
 
     private Message createMessage() {
-        return Message.newBuilder()
-                .setMetadata(MessageMetadata.newBuilder()
-                        .setMessageType("RootWithNestedComplex")
-                        .build())
+        return createMessageBuilder("RootWithNestedComplex")
                 .putFields("string", getSimpleValue("StringValue"))
                 .putFields("byte", getSimpleValue("0"))
                 .putFields("short", getSimpleValue("1"))
@@ -156,17 +161,4 @@ class ProtoToIMessageConverterTest {
         ).build();
     }
 
-    private Value getComplex(String messageType, Map<String, String> values) {
-        Message.Builder messageBuilder = Message.newBuilder();
-        messageBuilder.setMetadata(MessageMetadata.newBuilder().setMessageType(messageType).build());
-        for (Entry<String, String> entry : values.entrySet()) {
-            messageBuilder.putFields(entry.getKey(), getSimpleValue(entry.getValue()));
-        }
-        return Value.newBuilder().setMessageValue(messageBuilder).build();
-    }
-
-    @NotNull
-    private Value getSimpleValue(String value) {
-        return Value.newBuilder().setSimpleValue(value).build();
-    }
 }
