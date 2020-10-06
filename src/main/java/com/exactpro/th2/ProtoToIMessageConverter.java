@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 
 import com.exactpro.sf.common.impl.messages.xml.configuration.JavaType;
 import org.apache.commons.lang3.BooleanUtils;
+import org.apache.commons.text.StringEscapeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -98,7 +99,7 @@ public class ProtoToIMessageConverter {
     private Object toSimpleFilter(ValueFilter value) {
         switch (value.getOperation()) {
             case EQUAL:
-                return StaticUtil.simpleFilter(0, null, StringUtil.enclose(value.getSimpleFilter(), '\''));
+                return StaticUtil.simpleFilter(0, null, StringUtil.enclose(StringEscapeUtils.escapeJava(value.getSimpleFilter())));
             case NOT_EQUAL:
                 // Enclose value to single quotes isn't required for arguments
                 return StaticUtil.filter(0, null, "x != value", "value", value.getSimpleFilter());
