@@ -16,24 +16,14 @@
 
 package com.exactpro.th2;
 
-import com.exactpro.sf.common.messages.IMessage;
-import com.exactpro.sf.common.messages.structures.IDictionaryStructure;
-import com.exactpro.sf.common.messages.structures.loaders.XmlDictionaryStructureLoader;
-import com.exactpro.sf.comparison.ComparatorSettings;
-import com.exactpro.sf.comparison.ComparisonResult;
-import com.exactpro.sf.configuration.suri.SailfishURI;
-import com.exactpro.th2.infra.grpc.ListValue;
-import com.exactpro.th2.infra.grpc.Message;
-import com.exactpro.th2.infra.grpc.MessageMetadata;
-import com.exactpro.th2.infra.grpc.Value;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import org.jetbrains.annotations.NotNull;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static com.exactpro.sf.comparison.ComparisonUtil.getResultCount;
+import static com.exactpro.sf.comparison.MessageComparator.compare;
+import static com.exactpro.sf.scriptrunner.StatusType.CONDITIONALLY_FAILED;
+import static com.exactpro.sf.scriptrunner.StatusType.CONDITIONALLY_PASSED;
+import static com.exactpro.sf.scriptrunner.StatusType.FAILED;
+import static com.exactpro.sf.scriptrunner.StatusType.PASSED;
+import static com.exactpro.th2.Messages.getSimpleFieldCountRecursive;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -42,13 +32,28 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import static com.exactpro.sf.comparison.ComparisonUtil.getResultCount;
-import static com.exactpro.sf.comparison.MessageComparator.compare;
-import static com.exactpro.sf.scriptrunner.StatusType.CONDITIONALLY_FAILED;
-import static com.exactpro.sf.scriptrunner.StatusType.CONDITIONALLY_PASSED;
-import static com.exactpro.sf.scriptrunner.StatusType.FAILED;
-import static com.exactpro.sf.scriptrunner.StatusType.PASSED;
-import static com.exactpro.th2.Messages.getSimpleFieldCountRecursive;
+import org.jetbrains.annotations.NotNull;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.exactpro.sf.common.messages.IMessage;
+import com.exactpro.sf.common.messages.structures.IDictionaryStructure;
+import com.exactpro.sf.common.messages.structures.loaders.XmlDictionaryStructureLoader;
+import com.exactpro.sf.comparison.ComparatorSettings;
+import com.exactpro.sf.comparison.ComparisonResult;
+import com.exactpro.sf.configuration.suri.SailfishURI;
+import com.exactpro.th2.infra.grpc.FilterOperation;
+import com.exactpro.th2.infra.grpc.ListValue;
+import com.exactpro.th2.infra.grpc.Message;
+import com.exactpro.th2.infra.grpc.MessageFilter;
+import com.exactpro.th2.infra.grpc.MessageMetadata;
+import com.exactpro.th2.infra.grpc.Value;
+import com.exactpro.th2.infra.grpc.ValueFilter;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 class ProtoToIMessageConverterTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(ProtoToIMessageConverterTest.class);
@@ -74,6 +79,20 @@ class ProtoToIMessageConverterTest {
         MessageWrapper actualIMessage = converter.fromProtoMessage(protoMessage, true);
         MessageWrapper expectedIMessage = createExpectedIMessage();
         assertPassed(expectedIMessage, actualIMessage);
+    }
+
+    @Test
+    void createSimpleFilterFromStringWithQuotes() {
+        assertDoesNotThrow(() -> {
+            MessageFilter filter = MessageFilter.newBuilder()
+                    .putFields("field", ValueFilter.newBuilder()
+                            .setOperation(FilterOperation.EQUAL)
+                            .setSimpleFilter("\"badly quoted string`'")
+                            .build())
+                    .build();
+
+            return converter.fromProtoFilter(filter, "message");
+        });
     }
 
     private void assertPassed(IMessage expected, IMessage actual) {
