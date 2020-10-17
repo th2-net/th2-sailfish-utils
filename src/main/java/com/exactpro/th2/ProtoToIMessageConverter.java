@@ -191,7 +191,7 @@ public class ProtoToIMessageConverter {
                 return null; // skip null value conversion
             }
             if (kindCase != KindCase.SIMPLE_VALUE) {
-                throw new IllegalArgumentException(String.format("Expects simple value but get %s for field %s", kindCase, fieldStructure.getName()));
+                throw new IllegalArgumentException(String.format("Expected simple value but got '%s' for field '%s'", kindCase, fieldStructure.getName()));
             }
             String simpleValue = value.getSimpleValue();
             if (fieldStructure.isEnum()) {
