@@ -50,6 +50,7 @@ import com.exactpro.th2.infra.grpc.ListValue;
 import com.exactpro.th2.infra.grpc.Message;
 import com.exactpro.th2.infra.grpc.MessageFilter;
 import com.exactpro.th2.infra.grpc.MessageMetadata;
+import com.exactpro.th2.infra.grpc.NullValue;
 import com.exactpro.th2.infra.grpc.Value;
 import com.exactpro.th2.infra.grpc.ValueFilter;
 import com.google.common.collect.ImmutableList;
@@ -155,6 +156,7 @@ class ProtoToIMessageConverterTest {
                         "field1", "field1",
                         "field2", "field2"
                 )))
+                .putFields("nullField", Value.newBuilder().setNullValue(NullValue.NULL_VALUE).build())
                 .putFields("complexList", Value.newBuilder().setMessageValue(
                         Message.newBuilder().putFields("list", getComplexList())
                     ).build())
