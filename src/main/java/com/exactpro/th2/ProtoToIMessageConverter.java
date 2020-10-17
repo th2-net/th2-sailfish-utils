@@ -23,6 +23,7 @@ import com.exactpro.sf.common.impl.messages.xml.configuration.JavaType;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.text.StringEscapeUtils;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,6 +41,7 @@ import com.exactpro.th2.infra.grpc.ListValueFilter;
 import com.exactpro.th2.infra.grpc.Message;
 import com.exactpro.th2.infra.grpc.MessageFilter;
 import com.exactpro.th2.infra.grpc.Value;
+import com.exactpro.th2.infra.grpc.Value.KindCase;
 import com.exactpro.th2.infra.grpc.ValueFilter;
 import com.google.protobuf.InvalidProtocolBufferException;
 
@@ -181,14 +183,22 @@ public class ProtoToIMessageConverter {
         return convertToTarget(value, fieldStructure);
     }
 
+    @Nullable
     private Object convertToTarget(Value value, IFieldStructure fieldStructure) {
         try {
+            KindCase kindCase = value.getKindCase();
+            if (kindCase == KindCase.NULL_VALUE || kindCase == KindCase.KIND_NOT_SET) {
+                return null; // skip null value conversion
+            }
+            if (kindCase != KindCase.SIMPLE_VALUE) {
+                throw new IllegalArgumentException(String.format("Expected simple value but got '%s' for field '%s'", kindCase, fieldStructure.getName()));
+            }
             String simpleValue = value.getSimpleValue();
             if (fieldStructure.isEnum()) {
                 simpleValue = convertEnumValue(fieldStructure, simpleValue);
             }
             // TODO may be place its logic into the MultiConverter
-            if (JAVA_LANG_BOOLEAN.equals(fieldStructure.getJavaType())) {
+            if (fieldStructure.getJavaType() == JAVA_LANG_BOOLEAN) {
                 return BooleanUtils.toBooleanObject(simpleValue);
             }
             return MultiConverter.convert(simpleValue,
