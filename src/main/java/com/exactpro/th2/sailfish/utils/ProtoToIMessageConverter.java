@@ -1,4 +1,4 @@
-/******************************************************************************
+/*
  * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,7 +12,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- ******************************************************************************/
+ */
 package com.exactpro.th2.sailfish.utils;
 
 import static com.exactpro.sf.common.impl.messages.xml.configuration.JavaType.JAVA_LANG_BOOLEAN;
@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.BooleanUtils;
+import org.apache.commons.text.StringEscapeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -42,6 +43,7 @@ import com.exactpro.th2.common.grpc.ListValueFilter;
 import com.exactpro.th2.common.grpc.Message;
 import com.exactpro.th2.common.grpc.MessageFilter;
 import com.exactpro.th2.common.grpc.Value;
+import com.exactpro.th2.common.grpc.Value.KindCase;
 import com.exactpro.th2.common.grpc.ValueFilter;
 import com.google.protobuf.InvalidProtocolBufferException;
 
@@ -105,7 +107,7 @@ public class ProtoToIMessageConverter {
     private Object toSimpleFilter(ValueFilter value) {
         switch (value.getOperation()) {
             case EQUAL:
-                return StaticUtil.simpleFilter(0, null, StringUtil.enclose(value.getSimpleFilter(), '\''));
+                return StaticUtil.simpleFilter(0, null, StringUtil.enclose(StringEscapeUtils.escapeJava(value.getSimpleFilter())));
             case NOT_EQUAL:
                 // Enclose value to single quotes isn't required for arguments
                 return StaticUtil.filter(0, null, "x != value", "value", value.getSimpleFilter());
@@ -194,8 +196,16 @@ public class ProtoToIMessageConverter {
         return convertToTarget(value, fieldStructure);
     }
 
+    @Nullable
     private Object convertToTarget(Value value, IFieldStructure fieldStructure) {
         try {
+            KindCase kindCase = value.getKindCase();
+            if (kindCase == KindCase.NULL_VALUE || kindCase == KindCase.KIND_NOT_SET) {
+                return null; // skip null value conversion
+            }
+            if (kindCase != KindCase.SIMPLE_VALUE) {
+                throw new IllegalArgumentException(String.format("Expected simple value but got '%s' for field '%s'", kindCase, fieldStructure.getName()));
+            }
             String simpleValue = value.getSimpleValue();
             if (fieldStructure.isEnum()) {
                 simpleValue = convertEnumValue(fieldStructure, simpleValue);

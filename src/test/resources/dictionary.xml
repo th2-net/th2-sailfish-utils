@@ -45,6 +45,7 @@
             <field name="complexList" reference="SubComplexListId"/>
             <field name="complex" reference="SubMessageId"/>
             <field name="enumInt" reference="enumIntId"/>
+            <field name="nullField" type="java.math.BigDecimal"/>
         </message>
     </messages>
 </dictionary>

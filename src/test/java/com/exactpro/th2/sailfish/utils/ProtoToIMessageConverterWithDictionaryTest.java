@@ -16,40 +16,30 @@
 
 package com.exactpro.th2.sailfish.utils;
 
-import com.exactpro.sf.common.messages.IMessage;
-import com.exactpro.sf.common.messages.structures.IDictionaryStructure;
-import com.exactpro.sf.common.messages.structures.loaders.XmlDictionaryStructureLoader;
-import com.exactpro.sf.comparison.ComparatorSettings;
-import com.exactpro.sf.comparison.ComparisonResult;
-import com.exactpro.sf.configuration.suri.SailfishURI;
-import com.exactpro.th2.common.grpc.ListValue;
-import com.exactpro.th2.common.grpc.Message;
-import com.exactpro.th2.common.grpc.Message.Builder;
-import com.exactpro.th2.common.grpc.MessageMetadata;
-import com.exactpro.th2.common.grpc.Value;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import org.jetbrains.annotations.NotNull;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Map;
-import java.util.Map.Entry;
 
-import static com.exactpro.sf.comparison.ComparisonUtil.getResultCount;
-import static com.exactpro.sf.comparison.MessageComparator.compare;
-import static com.exactpro.sf.scriptrunner.StatusType.CONDITIONALLY_FAILED;
-import static com.exactpro.sf.scriptrunner.StatusType.CONDITIONALLY_PASSED;
-import static com.exactpro.sf.scriptrunner.StatusType.FAILED;
-import static com.exactpro.sf.scriptrunner.StatusType.PASSED;
-import static com.exactpro.th2.sailfish.utils.Messages.getSimpleFieldCountRecursive;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+
+import com.exactpro.sf.common.messages.IMessage;
+import com.exactpro.sf.common.messages.structures.IDictionaryStructure;
+import com.exactpro.sf.common.messages.structures.loaders.XmlDictionaryStructureLoader;
+import com.exactpro.sf.configuration.suri.SailfishURI;
+import com.exactpro.th2.common.grpc.FilterOperation;
+import com.exactpro.th2.common.grpc.ListValue;
+import com.exactpro.th2.common.grpc.Message;
+import com.exactpro.th2.common.grpc.MessageFilter;
+import com.exactpro.th2.common.grpc.NullValue;
+import com.exactpro.th2.common.grpc.Value;
+import com.exactpro.th2.common.grpc.ValueFilter;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 class ProtoToIMessageConverterWithDictionaryTest extends AbstractProtoToIMessageConverterTest {
     private static SailfishURI dictionaryURI;
@@ -92,6 +82,20 @@ class ProtoToIMessageConverterWithDictionaryTest extends AbstractProtoToIMessage
                 () -> converter.fromProtoMessage(Message.newBuilder().build(), true),
                 "Conversion for message without message type should fails");
         Assertions.assertEquals("Cannot convert message with blank message type", argumentException.getMessage());
+    }
+
+    @Test
+    void createSimpleFilterFromStringWithQuotes() {
+        assertDoesNotThrow(() -> {
+            MessageFilter filter = MessageFilter.newBuilder()
+                    .putFields("field", ValueFilter.newBuilder()
+                            .setOperation(FilterOperation.EQUAL)
+                            .setSimpleFilter("\"badly quoted string`'")
+                            .build())
+                    .build();
+
+            return converter.fromProtoFilter(filter, "message");
+        });
     }
 
     private MessageWrapper createExpectedIMessage() {
@@ -141,6 +145,7 @@ class ProtoToIMessageConverterWithDictionaryTest extends AbstractProtoToIMessage
                         "field1", "field1",
                         "field2", "field2"
                 )))
+                .putFields("nullField", Value.newBuilder().setNullValue(NullValue.NULL_VALUE).build())
                 .putFields("complexList", Value.newBuilder().setMessageValue(
                         Message.newBuilder().putFields("list", getComplexList())
                     ).build())
