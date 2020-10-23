@@ -20,8 +20,10 @@ import static java.util.Objects.requireNonNull;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
+import com.exactpro.sf.common.messages.structures.IAttributeStructure;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.text.StringEscapeUtils;
 import org.jetbrains.annotations.NotNull;
@@ -86,7 +88,7 @@ public class ProtoToIMessageConverter {
     public IMessage fromProtoFilter(MessageFilter messageFilter, String messageName) {
         logger.debug("Converting filter {} as {}", messageFilter, messageName);
         IMessage message = messageFactory.createMessage(dictionaryURI, messageName);
-        for (Map.Entry<String, ValueFilter> filterEntry : messageFilter.getFieldsMap().entrySet()) {
+        for (Entry<String, ValueFilter> filterEntry : messageFilter.getFieldsMap().entrySet()) {
             message.addField(filterEntry.getKey(), traverseFilterField(filterEntry.getKey(), filterEntry.getValue()));
         }
 
@@ -140,7 +142,7 @@ public class ProtoToIMessageConverter {
 
     private IMessage convertByDictionary(Map<String, Value> fieldsMap, @NotNull IFieldStructure messageStructure) {
         IMessage message = messageFactory.createMessage(dictionaryURI, messageStructure.getName());
-        for (Map.Entry<String, Value> fieldEntry : fieldsMap.entrySet()) {
+        for (Entry<String, Value> fieldEntry : fieldsMap.entrySet()) {
             String fieldName = fieldEntry.getKey();
             Value fieldValue = fieldEntry.getValue();
             IFieldStructure fieldStructure = messageStructure.getFields().get(fieldName);
@@ -152,7 +154,7 @@ public class ProtoToIMessageConverter {
 
     private IMessage convertWithoutDictionary(Map<String, Value> fieldsMap, String messageType) {
         IMessage message = messageFactory.createMessage(dictionaryURI, messageType);
-        for (Map.Entry<String, Value> fieldEntry : fieldsMap.entrySet()) {
+        for (Entry<String, Value> fieldEntry : fieldsMap.entrySet()) {
             String fieldName = fieldEntry.getKey();
             Value fieldValue = fieldEntry.getValue();
             Object traverseField = traverseField(fieldName, fieldValue);
@@ -223,12 +225,13 @@ public class ProtoToIMessageConverter {
     }
 
     private String convertEnumValue(IFieldStructure fieldStructure, String value) {
-        for(String enumKey : fieldStructure.getValues().keySet()) {
-            if (enumKey.equals(value)) {
-                return fieldStructure.getValues().get(enumKey).getValue();
+        for(Entry<String, IAttributeStructure> enumEntry : fieldStructure.getValues().entrySet()) {
+            String enumValue = enumEntry.getValue().getValue();
+            if (enumEntry.getKey().equals(value) || enumValue.equals(value)) {
+                return enumValue;
             }
         }
-        return value;
+        throw new UnknownEnumException(fieldStructure.getName(), value, fieldStructure.getNamespace());
     }
 
     private Object processComplex(Value value, IFieldStructure fieldStructure) {

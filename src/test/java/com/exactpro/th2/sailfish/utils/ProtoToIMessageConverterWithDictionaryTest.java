@@ -16,14 +16,11 @@
 
 package com.exactpro.th2.sailfish.utils;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -40,6 +37,8 @@ import com.exactpro.th2.common.grpc.Value;
 import com.exactpro.th2.common.grpc.ValueFilter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 class ProtoToIMessageConverterWithDictionaryTest extends AbstractProtoToIMessageConverterTest {
     private static SailfishURI dictionaryURI;
@@ -60,28 +59,40 @@ class ProtoToIMessageConverterWithDictionaryTest extends AbstractProtoToIMessage
 
     @Test
     void convertByDictionaryPositive() {
-        Message protoMessage = createMessage();
+        Message protoMessage = createMessage().build();
         MessageWrapper actualIMessage = converter.fromProtoMessage(protoMessage, true);
         MessageWrapper expectedIMessage = createExpectedIMessage();
         assertPassed(expectedIMessage, actualIMessage);
     }
 
     @Test
+    void UnknownEnumExceptionTest() {
+        Message protoMessage = createMessage()
+                .putFields("enumInt", getSimpleValue("UNKNOWN_ALIAS")).build();
+        var missingEnumValueException = assertThrows(
+                UnknownEnumException.class,
+                () -> converter.fromProtoMessage(protoMessage, true),
+                "Conversion for message with missing enum value should fails");
+        assertEquals("Unknown 'enumInt' enum value/alias for 'UNKNOWN_ALIAS' field in the 'dictionary' dictionary",
+                missingEnumValueException.getMessage());
+    }
+
+    @Test
     void convertUnknownMessageThrowException() {
-        var nullPointerException = Assertions.assertThrows(
+        var nullPointerException = assertThrows(
                 NullPointerException.class,
                 () -> converter.fromProtoMessage(createMessageBuilder("SomeUnknownMessage").build(), true),
                 "Conversion for unknown message should fails");
-        Assertions.assertEquals("Unknown message: SomeUnknownMessage", nullPointerException.getMessage());
+        assertEquals("Unknown message: SomeUnknownMessage", nullPointerException.getMessage());
     }
 
     @Test
     void convertMessageWithoutMessageTypeThrowException() {
-        var argumentException = Assertions.assertThrows(
+        var argumentException = assertThrows(
                 IllegalArgumentException.class,
                 () -> converter.fromProtoMessage(Message.newBuilder().build(), true),
                 "Conversion for message without message type should fails");
-        Assertions.assertEquals("Cannot convert message with blank message type", argumentException.getMessage());
+        assertEquals("Cannot convert message with blank message type", argumentException.getMessage());
     }
 
     @Test
@@ -126,7 +137,7 @@ class ProtoToIMessageConverterWithDictionaryTest extends AbstractProtoToIMessage
         return new MessageWrapper(message);
     }
 
-    private Message createMessage() {
+    private Message.Builder createMessage() {
         return createMessageBuilder("RootWithNestedComplex")
                 .putFields("string", getSimpleValue("StringValue"))
                 .putFields("byte", getSimpleValue("0"))
@@ -148,8 +159,7 @@ class ProtoToIMessageConverterWithDictionaryTest extends AbstractProtoToIMessage
                 .putFields("nullField", Value.newBuilder().setNullValue(NullValue.NULL_VALUE).build())
                 .putFields("complexList", Value.newBuilder().setMessageValue(
                         Message.newBuilder().putFields("list", getComplexList())
-                    ).build())
-                .build();
+                    ).build());
     }
 
     private Value getComplexList() {
