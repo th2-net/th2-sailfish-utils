@@ -53,17 +53,15 @@ public class IMessageToProtoConverter {
     @NotNull
     private ListValue convertToListValue(Object fieldValue) {
         ListValue.Builder listBuilder = ListValue.newBuilder();
-        if (((List<?>)fieldValue).get(0) instanceof IMessage) {
-            ((List<?>)fieldValue)
-                    .stream()
-                    .forEach(message -> listBuilder.addValues(
+        var fieldList = (List<?>)fieldValue;
+        if (!fieldList.isEmpty() && fieldList.get(0) instanceof IMessage) {
+            fieldList.forEach(message -> listBuilder.addValues(
                             Value.newBuilder()
                             .setMessageValue(convertComplex((IMessage)message))
                             .build()
                     ));
         } else {
-            ((List<?>)fieldValue).stream()
-                    .forEach(value -> listBuilder.addValues(
+            fieldList.forEach(value -> listBuilder.addValues(
                             Value.newBuilder().setSimpleValue(value.toString()).build()
                     ));
         }

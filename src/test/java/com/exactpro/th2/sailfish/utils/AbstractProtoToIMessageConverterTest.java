@@ -41,7 +41,7 @@ import com.exactpro.th2.common.grpc.Message;
 import com.exactpro.th2.common.grpc.MessageMetadata;
 import com.exactpro.th2.common.grpc.Value;
 
-public class AbstractProtoToIMessageConverterTest {
+public class AbstractProtoToIMessageConverterTest extends AbstractConverterTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractProtoToIMessageConverterTest.class);
 
     protected void assertPassed(IMessage expected, IMessage actual) {
@@ -54,31 +54,4 @@ public class AbstractProtoToIMessageConverterTest {
         Assertions.assertEquals(0, getResultCount(comparisonResult, CONDITIONALLY_PASSED));
     }
 
-    @NotNull
-    protected Message.Builder createMessageBuilder(String messageType) {
-        return Message.newBuilder()
-                .setMetadata(MessageMetadata.newBuilder()
-                        .setMessageType(messageType)
-                        .build());
-    }
-
-    protected Value getComplex(String messageType, Map<String, String> values) {
-        Message.Builder messageBuilder = createMessageBuilder(messageType);
-        for (Entry<String, String> entry : values.entrySet()) {
-            messageBuilder.putFields(entry.getKey(), getSimpleValue(entry.getValue()));
-        }
-        return Value.newBuilder().setMessageValue(messageBuilder).build();
-    }
-
-    protected Value getListValue(Value... listValues) {
-        if (listValues == null || listValues.length == 0) {
-            return Value.newBuilder().setListValue(ListValue.newBuilder().build()).build();
-        }
-        return Value.newBuilder().setListValue(ListValue.newBuilder().addAllValues(List.of(listValues)).build()).build();
-    }
-
-    @NotNull
-    protected Value getSimpleValue(String value) {
-        return Value.newBuilder().setSimpleValue(value).build();
-    }
 }
