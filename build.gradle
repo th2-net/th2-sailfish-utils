@@ -8,7 +8,7 @@ plugins {
 ext {
     sharedDir           = file("${project.rootDir}/shared")
 
-    sailfishVersion     = '3.2'
+    sailfishVersion     = '3.2-SNAPSHOT'
 }
 
 repositories {
@@ -25,6 +25,10 @@ repositories {
         name 'Bintray sf'
         url 'https://dl.bintray.com/exactpro/sailfish'
     }
+    maven {
+        name 'Artifactory-snapshot-oss'
+        url 'https://oss.jfrog.org/artifactory/libs-snapshot'
+    }
     mavenLocal()
 
     configurations.all {
@@ -40,7 +44,7 @@ sourceCompatibility = 11
 targetCompatibility = 11
 
 dependencies {
-    api platform('com.exactpro.th2:bom:2.3.+')
+    api platform('com.exactpro.th2:bom:2.10.1')
     implementation 'com.exactpro.th2:common'
     implementation 'com.exactpro.th2:grpc-common'
 
