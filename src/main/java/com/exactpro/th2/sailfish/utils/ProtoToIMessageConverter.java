@@ -16,6 +16,7 @@
 package com.exactpro.th2.sailfish.utils;
 
 import static com.exactpro.sf.common.impl.messages.xml.configuration.JavaType.JAVA_LANG_BOOLEAN;
+import static com.google.protobuf.TextFormat.shortDebugString;
 import static java.util.Objects.requireNonNull;
 
 import java.util.List;
@@ -48,6 +49,7 @@ import com.exactpro.th2.common.grpc.Value;
 import com.exactpro.th2.common.grpc.Value.KindCase;
 import com.exactpro.th2.common.grpc.ValueFilter;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.TextFormat;
 
 public class ProtoToIMessageConverter {
     private static final Logger logger = LoggerFactory.getLogger(ProtoToIMessageConverter.class.getName());
@@ -70,7 +72,9 @@ public class ProtoToIMessageConverter {
 
     @NotNull
     public MessageWrapper fromProtoMessage(Message receivedMessage, boolean useDictionary) {
-        logger.debug("Converting message {} {} dictionary", receivedMessage, useDictionary ? "using" : "without");
+        if (logger.isDebugEnabled()) {
+            logger.debug("Converting message {} {} dictionary", shortDebugString(receivedMessage), useDictionary ? "using" : "without");
+        }
 
         String messageType = requireNonNull(receivedMessage.getMetadata().getMessageType(),
                 "'Metadata.messageType' must not be null");
@@ -86,7 +90,9 @@ public class ProtoToIMessageConverter {
     }
 
     public IMessage fromProtoFilter(MessageFilter messageFilter, String messageName) {
-        logger.debug("Converting filter {} as {}", messageFilter, messageName);
+        if (logger.isDebugEnabled()) {
+            logger.debug("Converting filter {} as {}", shortDebugString(messageFilter), messageName);
+        }
         IMessage message = messageFactory.createMessage(dictionaryURI, messageName);
         for (Entry<String, ValueFilter> filterEntry : messageFilter.getFieldsMap().entrySet()) {
             message.addField(filterEntry.getKey(), traverseFilterField(filterEntry.getKey(), filterEntry.getValue()));
