@@ -45,10 +45,8 @@ targetCompatibility = 11
 
 dependencies {
     api platform('com.exactpro.th2:bom:2.10.1')
-    implementation 'com.exactpro.th2:common'
-    implementation 'com.exactpro.th2:grpc-common'
-
-    implementation "com.exactpro.sf:sailfish-core:${sailfishVersion}"
+    api 'com.exactpro.th2:common:3.0.3'
+    api "com.exactpro.sf:sailfish-core:${sailfishVersion}"
 
     implementation "org.slf4j:slf4j-log4j12"
     implementation "org.slf4j:slf4j-api"
