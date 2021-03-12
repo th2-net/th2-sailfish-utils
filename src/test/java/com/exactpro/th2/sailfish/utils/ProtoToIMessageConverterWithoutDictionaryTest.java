@@ -17,16 +17,23 @@
 package com.exactpro.th2.sailfish.utils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
+import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
+import com.exactpro.sf.aml.scriptutil.StaticUtil.IFilter;
 import com.exactpro.sf.common.messages.IMessage;
 import com.exactpro.sf.configuration.suri.SailfishURI;
+import com.exactpro.th2.common.grpc.FilterOperation;
 import com.exactpro.th2.common.grpc.Message;
 import com.exactpro.th2.common.grpc.Message.Builder;
+import com.exactpro.th2.common.grpc.MetadataFilter;
+import com.exactpro.th2.common.grpc.MetadataFilter.SimpleFilter;
 import com.exactpro.th2.common.grpc.Value;
 
 class ProtoToIMessageConverterWithoutDictionaryTest extends AbstractProtoToIMessageConverterTest {
@@ -95,5 +102,28 @@ class ProtoToIMessageConverterWithoutDictionaryTest extends AbstractProtoToIMess
         );
 
         assertEquals("Cannot convert using dictionary without dictionary set", illegalStateException.getMessage());
+    }
+
+    @Test
+    void convertsMetadataFilter() {
+        MetadataFilter metadataFilter = MetadataFilter.newBuilder()
+                .putPropertyFilters("prop1", SimpleFilter.newBuilder()
+                        .setOperation(FilterOperation.EQUAL)
+                        .setValue("test")
+                        .build())
+                .putPropertyFilters("prop2", SimpleFilter.newBuilder()
+                        .setOperation(FilterOperation.EQUAL)
+                        .setValue("test")
+                        .build())
+                .build();
+        IMessage message = converter.fromMetadataFilter(metadataFilter, "Metadata");
+
+        assertEquals("Metadata", message.getName());
+        assertEquals(2, message.getFieldCount());
+        assertTrue(Set.of("prop1", "prop2").containsAll(message.getFieldNames()), () -> "Unknown fields: " + message);
+        Object prop1 = message.getField("prop1");
+        assertTrue(prop1 instanceof IFilter, () -> "Unexpected type: " + prop1.getClass());
+        Object prop2 = message.getField("prop2");
+        assertTrue(prop2 instanceof IFilter, () -> "Unexpected type: " + prop2.getClass());
     }
 }
