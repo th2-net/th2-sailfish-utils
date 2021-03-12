@@ -41,15 +41,17 @@ import com.exactpro.sf.common.util.StringUtil;
 import com.exactpro.sf.comparison.conversion.MultiConverter;
 import com.exactpro.sf.configuration.suri.SailfishURI;
 import com.exactpro.sf.externalapi.IMessageFactoryProxy;
+import com.exactpro.th2.common.grpc.FilterOperation;
 import com.exactpro.th2.common.grpc.ListValue;
 import com.exactpro.th2.common.grpc.ListValueFilter;
 import com.exactpro.th2.common.grpc.Message;
 import com.exactpro.th2.common.grpc.MessageFilter;
+import com.exactpro.th2.common.grpc.MetadataFilter;
+import com.exactpro.th2.common.grpc.MetadataFilter.SimpleFilter;
 import com.exactpro.th2.common.grpc.Value;
 import com.exactpro.th2.common.grpc.Value.KindCase;
 import com.exactpro.th2.common.grpc.ValueFilter;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.google.protobuf.TextFormat;
 
 public class ProtoToIMessageConverter {
     private static final Logger logger = LoggerFactory.getLogger(ProtoToIMessageConverter.class.getName());
@@ -102,6 +104,20 @@ public class ProtoToIMessageConverter {
         return message;
     }
 
+    public IMessage fromMetadataFilter(MetadataFilter filter, String messageName) {
+        if (logger.isTraceEnabled()) {
+            logger.trace("Converting filter {} as {}", shortDebugString(filter), messageName);
+        }
+        IMessage message = messageFactory.createMessage(dictionaryURI, messageName);
+        for (Entry<String, SimpleFilter> filterEntry : filter.getPropertyFiltersMap().entrySet()) {
+            SimpleFilter propertyFilter = filterEntry.getValue();
+            message.addField(filterEntry.getKey(), toSimpleFilter(propertyFilter.getOperation(), propertyFilter.getValue()));
+        }
+
+        logger.trace("Metadata filter converted to '{}': {}", messageName, message);
+        return message;
+    }
+
     private Object traverseFilterField(String fieldname, ValueFilter value) {
         if (value.hasListFilter()) {
             return traverseCollection(fieldname, value.getListFilter());
@@ -109,22 +125,22 @@ public class ProtoToIMessageConverter {
         if (value.hasMessageFilter()) {
             return fromProtoFilter(value.getMessageFilter(), fieldname);
         }
-        return toSimpleFilter(value);
+        return toSimpleFilter(value.getOperation(), value.getSimpleFilter());
     }
 
-    private Object toSimpleFilter(ValueFilter value) {
-        switch (value.getOperation()) {
+    private Object toSimpleFilter(FilterOperation operation, String simpleFilter) {
+        switch (operation) {
             case EQUAL:
-                return StaticUtil.simpleFilter(0, null, StringUtil.enclose(StringEscapeUtils.escapeJava(value.getSimpleFilter())));
+                return StaticUtil.simpleFilter(0, null, StringUtil.enclose(StringEscapeUtils.escapeJava(simpleFilter)));
             case NOT_EQUAL:
                 // Enclose value to single quotes isn't required for arguments
-                return StaticUtil.filter(0, null, "x != value", "value", value.getSimpleFilter());
+                return StaticUtil.filter(0, null, "x != value", "value", simpleFilter);
             case EMPTY:
                 return StaticUtil.nullFilter(0, null);
             case NOT_EMPTY:
                 return StaticUtil.notNullFilter(0, null);
             default:
-                throw new IllegalArgumentException("Unsupported operation " + value.getOperation());
+                throw new IllegalArgumentException("Unsupported operation " + operation);
         }
     }
 
