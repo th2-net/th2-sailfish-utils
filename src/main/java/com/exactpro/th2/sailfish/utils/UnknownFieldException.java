@@ -1,5 +1,5 @@
 /*
- *  Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ *  Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -13,15 +13,15 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-
 package com.exactpro.th2.sailfish.utils;
 
-import static java.lang.String.format;
+public class UnknownFieldException extends MessageConvertException {
 
-public class UnknownEnumException extends MessageConvertException {
+    public UnknownFieldException(String message) {
+        super(message);
+    }
 
-    public UnknownEnumException(String fieldName, String fieldValue, String dictionary) {
-        super(format("Unknown '%s' enum value/alias for '%s' field in the '%s' dictionary",
-                fieldName, fieldValue, dictionary));
+    public UnknownFieldException(String message, Throwable cause) {
+        super(message, cause);
     }
 }

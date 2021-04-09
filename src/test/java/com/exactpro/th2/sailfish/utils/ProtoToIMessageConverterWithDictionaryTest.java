@@ -16,6 +16,10 @@
 
 package com.exactpro.th2.sailfish.utils;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.file.Files;
@@ -37,8 +41,6 @@ import com.exactpro.th2.common.grpc.Value;
 import com.exactpro.th2.common.grpc.ValueFilter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 class ProtoToIMessageConverterWithDictionaryTest extends AbstractProtoToIMessageConverterTest {
     private static SailfishURI dictionaryURI;
@@ -107,6 +109,122 @@ class ProtoToIMessageConverterWithDictionaryTest extends AbstractProtoToIMessage
 
             return converter.fromProtoFilter(filter, "message");
         });
+    }
+
+    @Test
+    void unknownFieldInRoot() {
+        var argumentException = assertThrows(
+                UnknownFieldException.class,
+                () -> {
+                    Message message = createMessageBuilder("RootWithNestedComplex")
+                            .putFields("Fake", getSimpleValue("fake"))
+                            .build();
+                    converter.fromProtoMessage(message, true);
+                },
+                "Conversion for message with unknown field in root should fails");
+        assertEquals("RootWithNestedComplex doesn't contain field Fake", argumentException.getMessage());
+    }
+
+    @Test
+    void unknownFieldInSubMessage() {
+        var argumentException = assertThrows(
+                UnknownFieldException.class,
+                () -> {
+                    Message message = createMessageBuilder("RootWithNestedComplex")
+                            .putFields("complex", getComplex("SubMessage", ImmutableMap.of(
+                                    "Fake", "fake"
+                            )))
+                            .build();
+                    converter.fromProtoMessage(message, true);
+                },
+                "Conversion for message with unknown field in sub-message should fails");
+        assertEquals("RootWithNestedComplex.complex doesn't contain field Fake", argumentException.getMessage());
+    }
+
+    @Test
+    void unknownFieldInGroup() {
+        var argumentException = assertThrows(
+                UnknownFieldException.class,
+                () -> {
+                    Message message = createMessageBuilder("RootWithNestedComplex")
+                            .putFields("complexList", Value.newBuilder().setMessageValue(
+                                    Message.newBuilder().putFields("list",
+                                            Value.newBuilder().setListValue(ListValue.newBuilder()
+                                                    .addValues(0, getComplex("SubMessage", ImmutableMap.of(
+                                                            "field1", "field1"
+                                                    )))
+                                                    .addValues(1, getComplex("SubMessage", ImmutableMap.of(
+                                                            "Fake", "fake"
+                                                    )))
+                                                    .build()
+                                            ).build()
+                                    ))
+                                    .build())
+                            .build();
+                    converter.fromProtoMessage(message, true);
+                },
+                "Conversion for message with unknown field in group should fails");
+        assertEquals("RootWithNestedComplex.complexList.list doesn't contain field Fake", argumentException.getMessage());
+    }
+
+    @Test
+    void incorrectSimpleType() {
+        var argumentException = assertThrows(
+                IllegalArgumentException.class,
+                () -> {
+                    Message message = createMessageBuilder("RootWithNestedComplex")
+                            .putFields("string", Value.newBuilder().setMessageValue(Message.newBuilder().build()).build())
+                            .build();
+                    converter.fromProtoMessage(message, true);
+                },
+                "Conversion for message with incorrect type of field with simple value should fails");
+        assertEquals("Expected 'SIMPLE_VALUE' value but got 'MESSAGE_VALUE' for field 'string'", argumentException.getMessage());
+    }
+
+    @Test
+    void incorrectComplexType() {
+        var argumentException = assertThrows(
+                IllegalArgumentException.class,
+                () -> {
+                    Message message = createMessageBuilder("RootWithNestedComplex")
+                            .putFields("complex", getSimpleValue("fake"))
+                            .build();
+                    converter.fromProtoMessage(message, true);
+                },
+                "Conversion for message with incorrect type of field with complex value should fails");
+        assertEquals("Expected 'MESSAGE_VALUE' value but got 'SIMPLE_VALUE' for field 'complex'", argumentException.getMessage());
+    }
+
+    @Test
+    void incorrectListOfComplexType() {
+        var argumentException = assertThrows(
+                IllegalArgumentException.class,
+                () -> {
+                    Message message = createMessageBuilder("RootWithNestedComplex")
+                            .putFields("list", getSimpleValue("fake"))
+                            .build();
+                    converter.fromProtoMessage(message, true);
+                },
+                "Conversion for message with incorrect type of field with list complex value should fails");
+        assertEquals("Expected 'LIST_VALUE' value but got 'SIMPLE_VALUE' for field 'list'", argumentException.getMessage());
+    }
+
+    @Test
+    void incorrectTypeOfList() {
+        var argumentException = assertThrows(
+                IllegalArgumentException.class,
+                () -> {
+                    Message message = createMessageBuilder("RootWithNestedComplex")
+                            .putFields("list", Value.newBuilder()
+                                    .setListValue(ListValue.newBuilder()
+                                            .addValues(getSimpleValue("fake"))
+                                    )
+                                    .build())
+                            .build();
+                    converter.fromProtoMessage(message, true);
+                },
+                "Conversion for message with incorrect type of field with list complex value should fails");
+        assertEquals("Expected 'MESSAGE_VALUE' value but got 'SIMPLE_VALUE' for field 'list'", argumentException.getMessage());
     }
 
     private MessageWrapper createExpectedIMessage() {
