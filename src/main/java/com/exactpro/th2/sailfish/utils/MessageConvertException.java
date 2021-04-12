@@ -22,6 +22,10 @@ import static java.util.stream.Collectors.toUnmodifiableList;
 import java.util.List;
 import java.util.stream.Stream;
 
+/**
+ * This exception contains an original cause which isn't an instance of the current class
+ * and a path in a message related to the problem item.
+ */
 public class MessageConvertException extends RuntimeException {
 
     private final List<String> path;

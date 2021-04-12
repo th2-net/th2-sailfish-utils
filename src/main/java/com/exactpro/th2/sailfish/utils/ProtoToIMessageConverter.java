@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.BooleanUtils;
@@ -166,6 +167,11 @@ public class ProtoToIMessageConverter {
         }
     }
 
+    private IMessage convertByDictionary(Value value, @NotNull IFieldStructure messageStructure) {
+        checkKind(value, messageStructure.getName(), KindCase.MESSAGE_VALUE);
+        return convertByDictionary(value.getMessageValue().getFieldsMap(), messageStructure);
+    }
+
     private IMessage convertByDictionary(Map<String, Value> fieldsMap, @NotNull IFieldStructure messageStructure) {
         IMessage message = messageFactory.createMessage(dictionaryURI, messageStructure.getName());
         for (Entry<String, Value> fieldEntry : fieldsMap.entrySet()) {
@@ -223,19 +229,7 @@ public class ProtoToIMessageConverter {
     private Object convertSimple(Value listEvent, IFieldStructure fieldStructure) {
         if (fieldStructure.isCollection()) {
             checkKind(listEvent, fieldStructure.getName(), KindCase.LIST_VALUE);
-
-            List<Value> valuesList = listEvent.getListValue().getValuesList();
-            int size = valuesList.size();
-            List<Object> result = new ArrayList<>(size);
-            for (int i = 0; i < size; i++) {
-                Value element = valuesList.get(i);
-                try {
-                    result.add(convertToTarget(element, fieldStructure));
-                } catch (RuntimeException e) {
-                    throw new MessageConvertException("[" + i + "]", e);
-                }
-            }
-            return result;
+            return convertList(listEvent.getListValue(), fieldStructure, this::convertToTarget);
         }
         return convertToTarget(listEvent, fieldStructure);
     }
@@ -279,8 +273,7 @@ public class ProtoToIMessageConverter {
             checkKind(value, fieldStructure.getName(), KindCase.LIST_VALUE);
             return convertComplexList(value.getListValue(), fieldStructure);
         }
-        checkKind(value, fieldStructure.getName(), KindCase.MESSAGE_VALUE);
-        return convertByDictionary(value.getMessageValue().getFieldsMap(), fieldStructure);
+        return convertByDictionary(value, fieldStructure);
     }
 
     private void checkKind(Value value, String fieldName, KindCase expected) {
@@ -290,18 +283,21 @@ public class ProtoToIMessageConverter {
     }
 
     private List<IMessage> convertComplexList(ListValue listValue, IFieldStructure fieldStructure) {
-        List<Value> valuesList = listValue.getValuesList();
-        int size = valuesList.size();
-        List<IMessage> result = new ArrayList<>(size);
+        return convertList(listValue, fieldStructure, this::convertByDictionary);
+    }
+
+    private <T> List<T> convertList(ListValue listValue, IFieldStructure fieldStructure, BiFunction<Value, IFieldStructure, T> mapper)  {
+        int size = listValue.getValuesCount();
+        List<T> result = new ArrayList<>(size);
         for (int i = 0; i < size; i++) {
-            Value value = valuesList.get(i);
+            Value element = listValue.getValues(i);
             try {
-                checkKind(value, fieldStructure.getName(), KindCase.MESSAGE_VALUE);
-                result.add(convertByDictionary(value.getMessageValue().getFieldsMap(), fieldStructure));
+                result.add(mapper.apply(element, fieldStructure));
             } catch (RuntimeException e) {
                 throw new MessageConvertException("[" + i + "]", e);
             }
         }
+
         return result;
     }
 }
