@@ -141,23 +141,39 @@ class ProtoToIMessageConverterWithDictionaryTest extends AbstractProtoToIMessage
     }
 
     @Test
-    void unknownFieldInGroup() {
+    void unknownFieldInMessageCollection() {
         var exception = assertThrows(
                 MessageConvertException.class,
                 () -> {
                     Value listValue = Value.newBuilder().setListValue(ListValue.newBuilder()
-                            .addValues(0, getComplex("SubMessage", Map.of("field1", "field1")))
-                            .addValues(1, getComplex("SubMessage", Map.of("Fake", "fake")))
-                    ).build();
+                                .addValues(getComplex("SubMessage", Map.of("field1", "field1")))
+                                .addValues(getComplex("SubMessage", Map.of("Fake", "fake"))))
+                            .build();
                     Message message = createMessageBuilder("RootWithNestedComplex")
-                            .putFields("complexList", Value.newBuilder()
-                                    .setMessageValue(Message.newBuilder().putFields("list", listValue))
-                                    .build())
+                            .putFields("msgCollection", listValue)
                             .build();
                     converter.fromProtoMessage(message, true);
                 },
-                "Conversion for message with unknown field in group should fails");
-        assertEquals("Message path: RootWithNestedComplex.complexList.list.[1], cause: Field 'Fake' hasn't been found in message structure: list", exception.getMessage());
+                "Conversion for message with unknown field in message collection should fails");
+        assertEquals("Message path: RootWithNestedComplex.msgCollection.[1], cause: Field 'Fake' hasn't been found in message structure: msgCollection", exception.getMessage());
+    }
+
+    @Test
+    void unknownFieldInSimpleCollection() {
+        var exception = assertThrows(
+                MessageConvertException.class,
+                () -> {
+                    Value listValue = Value.newBuilder().setListValue(ListValue.newBuilder()
+                                .addValues(getSimpleValue("1"))
+                                .addValues(getSimpleValue("abc")))
+                            .build();
+                    Message message = createMessageBuilder("RootWithNestedComplex")
+                            .putFields("simpleCollection", listValue)
+                            .build();
+                    converter.fromProtoMessage(message, true);
+                },
+                "Conversion for message with unknown field in simple collection should fails");
+        assertEquals("Message path: RootWithNestedComplex.simpleCollection.[1], cause: Cannot convert from String to Integer - value: abc, reason: For input string: \"abc\"", exception.getMessage());
     }
 
     @Test
@@ -194,12 +210,12 @@ class ProtoToIMessageConverterWithDictionaryTest extends AbstractProtoToIMessage
                 MessageConvertException.class,
                 () -> {
                     Message message = createMessageBuilder("RootWithNestedComplex")
-                            .putFields("list", getSimpleValue("fake"))
+                            .putFields("msgCollection", getSimpleValue("fake"))
                             .build();
                     converter.fromProtoMessage(message, true);
                 },
                 "Conversion for message with incorrect type of field with list complex value should fails");
-        assertEquals("Message path: RootWithNestedComplex.list, cause: Expected 'LIST_VALUE' value but got 'SIMPLE_VALUE' for field 'list'", exception.getMessage());
+        assertEquals("Message path: RootWithNestedComplex.msgCollection, cause: Expected 'LIST_VALUE' value but got 'SIMPLE_VALUE' for field 'msgCollection'", exception.getMessage());
     }
 
     @Test
@@ -208,7 +224,7 @@ class ProtoToIMessageConverterWithDictionaryTest extends AbstractProtoToIMessage
                 MessageConvertException.class,
                 () -> {
                     Message message = createMessageBuilder("RootWithNestedComplex")
-                            .putFields("list", Value.newBuilder()
+                            .putFields("msgCollection", Value.newBuilder()
                                     .setListValue(ListValue.newBuilder()
                                             .addValues(getSimpleValue("fake"))
                                     )
@@ -217,7 +233,7 @@ class ProtoToIMessageConverterWithDictionaryTest extends AbstractProtoToIMessage
                     converter.fromProtoMessage(message, true);
                 },
                 "Conversion for message with incorrect type of field with list complex value should fails");
-        assertEquals("Message path: RootWithNestedComplex.list.[0], cause: Expected 'MESSAGE_VALUE' value but got 'SIMPLE_VALUE' for field 'list'", exception.getMessage());
+        assertEquals("Message path: RootWithNestedComplex.msgCollection.[0], cause: Expected 'MESSAGE_VALUE' value but got 'SIMPLE_VALUE' for field 'msgCollection'", exception.getMessage());
     }
 
     private MessageWrapper createExpectedIMessage() {

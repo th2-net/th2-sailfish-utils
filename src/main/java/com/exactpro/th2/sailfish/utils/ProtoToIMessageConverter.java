@@ -220,15 +220,24 @@ public class ProtoToIMessageConverter {
         message.addField(fieldName, convertedValue);
     }
 
-    private Object convertSimple(Value value, IFieldStructure fieldStructure) {
+    private Object convertSimple(Value listEvent, IFieldStructure fieldStructure) {
         if (fieldStructure.isCollection()) {
-            checkKind(value, fieldStructure.getName(), KindCase.LIST_VALUE);
-            return value.getListValue().getValuesList()
-                    .stream()
-                    .map(element -> convertToTarget(element, fieldStructure))
-                    .collect(Collectors.toList());
+            checkKind(listEvent, fieldStructure.getName(), KindCase.LIST_VALUE);
+
+            List<Value> valuesList = listEvent.getListValue().getValuesList();
+            int size = valuesList.size();
+            List<Object> result = new ArrayList<>(size);
+            for (int i = 0; i < size; i++) {
+                Value element = valuesList.get(i);
+                try {
+                    result.add(convertToTarget(element, fieldStructure));
+                } catch (RuntimeException e) {
+                    throw new MessageConvertException("[" + i + "]", e);
+                }
+            }
+            return result;
         }
-        return convertToTarget(value, fieldStructure);
+        return convertToTarget(listEvent, fieldStructure);
     }
 
     @Nullable
