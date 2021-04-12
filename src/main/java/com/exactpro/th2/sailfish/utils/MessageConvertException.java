@@ -15,38 +15,37 @@
  */
 package com.exactpro.th2.sailfish.utils;
 
-import java.util.Collections;
+import static java.util.Collections.singletonList;
+import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.toUnmodifiableList;
+
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class MessageConvertException extends RuntimeException {
 
     private final List<String> path;
 
-    public MessageConvertException(String message) {
-        super(message);
-
-        this.path = Collections.emptyList();
-    }
-
-    public MessageConvertException(String path, String message) {
-        super(message);
-
-        this.path = Collections.singletonList(path);
-    }
-
     public MessageConvertException(String path, Throwable cause) {
-        super(cause.getMessage(), cause);
+        super(null, getOriginCause(cause), true, false);
+        requireNonNull(path, "Path can't be null");
 
         if (cause instanceof MessageConvertException) {
-            this.path = Stream.concat(Stream.of(path), ((MessageConvertException)cause).path.stream()).collect(Collectors.toUnmodifiableList());
+            this.path = Stream.concat(Stream.of(path), ((MessageConvertException)cause).path.stream()).collect(toUnmodifiableList());
         } else {
-            this.path = Collections.singletonList(path);
+            this.path = singletonList(path);
         }
     }
 
-    public String getMessageWithPath() {
-        return "Message path: " + String.join(".", path) + ", cause: " + getMessage();
+    private static Throwable getOriginCause(Throwable cause) {
+        if (cause instanceof MessageConvertException) {
+            return cause.getCause();
+        }
+        return requireNonNull(cause, "Origin cause can't be null");
+    }
+
+    @Override
+    public String getMessage() {
+        return "Message path: " + String.join(".", path) + ", cause: " + getCause().getMessage();
     }
 }

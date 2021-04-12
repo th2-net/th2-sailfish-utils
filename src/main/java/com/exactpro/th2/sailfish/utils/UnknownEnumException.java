@@ -18,7 +18,7 @@ package com.exactpro.th2.sailfish.utils;
 
 import static java.lang.String.format;
 
-public class UnknownEnumException extends MessageConvertException {
+public class UnknownEnumException extends RuntimeException {
 
     public UnknownEnumException(String fieldName, String fieldValue, String dictionary) {
         super(format("Unknown '%s' enum value/alias for '%s' field in the '%s' dictionary",

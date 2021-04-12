@@ -157,7 +157,7 @@ public class ProtoToIMessageConverter {
         }
         IMessageStructure messageStructure = dictionary.getMessages().get(messageType);
         if (messageStructure == null) {
-            throw new MessageConvertException(messageType, "Unknown message: " + messageType);
+            throw new IllegalStateException("Message '" + messageType + "' hasn't been found in dictionary");
         }
         try {
             return convertByDictionary(fieldsMap, messageStructure);
@@ -174,7 +174,7 @@ public class ProtoToIMessageConverter {
 
             IFieldStructure fieldStructure = messageStructure.getFields().get(fieldName);
             if (fieldStructure == null) {
-                throw new MessageConvertException(fieldName, "Filed '" + fieldName + "' isn't found in message structure");
+                throw new IllegalStateException("Field '" + fieldName + "' hasn't been found in message structure: " + messageStructure.getName());
             }
             try {
                 traverseField(message, fieldName, fieldValue, fieldStructure);

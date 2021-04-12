@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -40,7 +41,6 @@ import com.exactpro.th2.common.grpc.NullValue;
 import com.exactpro.th2.common.grpc.Value;
 import com.exactpro.th2.common.grpc.ValueFilter;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 
 class ProtoToIMessageConverterWithDictionaryTest extends AbstractProtoToIMessageConverterTest {
     private static SailfishURI dictionaryURI;
@@ -75,22 +75,16 @@ class ProtoToIMessageConverterWithDictionaryTest extends AbstractProtoToIMessage
                 MessageConvertException.class,
                 () -> converter.fromProtoMessage(protoMessage, true),
                 "Conversion for message with missing enum value should fails");
-        String cause = "Unknown 'enumInt' enum value/alias for 'UNKNOWN_ALIAS' field in the 'dictionary' dictionary";
-        assertEquals(cause,
-                exception.getMessage());
-        assertEquals("Message path: RootWithNestedComplex.enumInt, cause: " + cause,
-                exception.getMessageWithPath());
+        assertEquals("Message path: RootWithNestedComplex.enumInt, cause: Unknown 'enumInt' enum value/alias for 'UNKNOWN_ALIAS' field in the 'dictionary' dictionary", exception.getMessage());
     }
 
     @Test
     void convertUnknownMessageThrowException() {
         var exception = assertThrows(
-                MessageConvertException.class,
+                IllegalStateException.class,
                 () -> converter.fromProtoMessage(createMessageBuilder("SomeUnknownMessage").build(), true),
                 "Conversion for unknown message should fails");
-        String cause = "Unknown message: SomeUnknownMessage";
-        assertEquals(cause, exception.getMessage());
-        assertEquals("Message path: SomeUnknownMessage, cause: " + cause, exception.getMessageWithPath());
+        assertEquals("Message 'SomeUnknownMessage' hasn't been found in dictionary", exception.getMessage());
     }
 
     @Test
@@ -127,9 +121,7 @@ class ProtoToIMessageConverterWithDictionaryTest extends AbstractProtoToIMessage
                     converter.fromProtoMessage(message, true);
                 },
                 "Conversion for message with unknown field in root should fails");
-        String cause = "Filed 'Fake' isn't found in message structure";
-        assertEquals(cause, exception.getMessage());
-        assertEquals("Message path: RootWithNestedComplex.Fake, cause: " + cause, exception.getMessageWithPath());
+        assertEquals("Message path: RootWithNestedComplex, cause: Field 'Fake' hasn't been found in message structure: RootWithNestedComplex", exception.getMessage());
     }
 
     @Test
@@ -138,16 +130,14 @@ class ProtoToIMessageConverterWithDictionaryTest extends AbstractProtoToIMessage
                 MessageConvertException.class,
                 () -> {
                     Message message = createMessageBuilder("RootWithNestedComplex")
-                            .putFields("complex", getComplex("SubMessage", ImmutableMap.of(
+                            .putFields("complex", getComplex("SubMessage", Map.of(
                                     "Fake", "fake"
                             )))
                             .build();
                     converter.fromProtoMessage(message, true);
                 },
                 "Conversion for message with unknown field in sub-message should fails");
-        String cause = "Filed 'Fake' isn't found in message structure";
-        assertEquals(cause, exception.getMessage());
-        assertEquals("Message path: RootWithNestedComplex.complex.Fake, cause: " + cause, exception.getMessageWithPath());
+        assertEquals("Message path: RootWithNestedComplex.complex, cause: Field 'Fake' hasn't been found in message structure: complex", exception.getMessage());
     }
 
     @Test
@@ -155,27 +145,19 @@ class ProtoToIMessageConverterWithDictionaryTest extends AbstractProtoToIMessage
         var exception = assertThrows(
                 MessageConvertException.class,
                 () -> {
+                    Value listValue = Value.newBuilder().setListValue(ListValue.newBuilder()
+                            .addValues(0, getComplex("SubMessage", Map.of("field1", "field1")))
+                            .addValues(1, getComplex("SubMessage", Map.of("Fake", "fake")))
+                    ).build();
                     Message message = createMessageBuilder("RootWithNestedComplex")
-                            .putFields("complexList", Value.newBuilder().setMessageValue(
-                                    Message.newBuilder().putFields("list",
-                                            Value.newBuilder().setListValue(ListValue.newBuilder()
-                                                    .addValues(0, getComplex("SubMessage", ImmutableMap.of(
-                                                            "field1", "field1"
-                                                    )))
-                                                    .addValues(1, getComplex("SubMessage", ImmutableMap.of(
-                                                            "Fake", "fake"
-                                                    )))
-                                                    .build()
-                                            ).build()
-                                    ))
+                            .putFields("complexList", Value.newBuilder()
+                                    .setMessageValue(Message.newBuilder().putFields("list", listValue))
                                     .build())
                             .build();
                     converter.fromProtoMessage(message, true);
                 },
                 "Conversion for message with unknown field in group should fails");
-        String cause = "Filed 'Fake' isn't found in message structure";
-        assertEquals(cause, exception.getMessage());
-        assertEquals("Message path: RootWithNestedComplex.complexList.list.[1].Fake, cause: " + cause, exception.getMessageWithPath());
+        assertEquals("Message path: RootWithNestedComplex.complexList.list.[1], cause: Field 'Fake' hasn't been found in message structure: list", exception.getMessage());
     }
 
     @Test
@@ -189,9 +171,7 @@ class ProtoToIMessageConverterWithDictionaryTest extends AbstractProtoToIMessage
                     converter.fromProtoMessage(message, true);
                 },
                 "Conversion for message with incorrect type of field with simple value should fails");
-        String cause = "Expected 'SIMPLE_VALUE' value but got 'MESSAGE_VALUE' for field 'string'";
-        assertEquals(cause, exception.getMessage());
-        assertEquals("Message path: RootWithNestedComplex.string, cause: " + cause, exception.getMessageWithPath());
+        assertEquals("Message path: RootWithNestedComplex.string, cause: Expected 'SIMPLE_VALUE' value but got 'MESSAGE_VALUE' for field 'string'", exception.getMessage());
     }
 
     @Test
@@ -205,9 +185,7 @@ class ProtoToIMessageConverterWithDictionaryTest extends AbstractProtoToIMessage
                     converter.fromProtoMessage(message, true);
                 },
                 "Conversion for message with incorrect type of field with complex value should fails");
-        String cause = "Expected 'MESSAGE_VALUE' value but got 'SIMPLE_VALUE' for field 'complex'";
-        assertEquals(cause, exception.getMessage());
-        assertEquals("Message path: RootWithNestedComplex.complex, cause: " + cause, exception.getMessageWithPath());
+        assertEquals("Message path: RootWithNestedComplex.complex, cause: Expected 'MESSAGE_VALUE' value but got 'SIMPLE_VALUE' for field 'complex'", exception.getMessage());
     }
 
     @Test
@@ -221,9 +199,7 @@ class ProtoToIMessageConverterWithDictionaryTest extends AbstractProtoToIMessage
                     converter.fromProtoMessage(message, true);
                 },
                 "Conversion for message with incorrect type of field with list complex value should fails");
-        String cause = "Expected 'LIST_VALUE' value but got 'SIMPLE_VALUE' for field 'list'";
-        assertEquals(cause, exception.getMessage());
-        assertEquals("Message path: RootWithNestedComplex.list, cause: " + cause, exception.getMessageWithPath());
+        assertEquals("Message path: RootWithNestedComplex.list, cause: Expected 'LIST_VALUE' value but got 'SIMPLE_VALUE' for field 'list'", exception.getMessage());
     }
 
     @Test
@@ -241,9 +217,7 @@ class ProtoToIMessageConverterWithDictionaryTest extends AbstractProtoToIMessage
                     converter.fromProtoMessage(message, true);
                 },
                 "Conversion for message with incorrect type of field with list complex value should fails");
-        String cause = "Expected 'MESSAGE_VALUE' value but got 'SIMPLE_VALUE' for field 'list'";
-        assertEquals(cause, exception.getMessage());
-        assertEquals("Message path: RootWithNestedComplex.list.[0], cause: " + cause, exception.getMessageWithPath());
+        assertEquals("Message path: RootWithNestedComplex.list.[0], cause: Expected 'MESSAGE_VALUE' value but got 'SIMPLE_VALUE' for field 'list'", exception.getMessage());
     }
 
     private MessageWrapper createExpectedIMessage() {
@@ -289,7 +263,7 @@ class ProtoToIMessageConverterWithDictionaryTest extends AbstractProtoToIMessage
                 .putFields("boolY", getSimpleValue("Y"))
                 .putFields("boolN", getSimpleValue("n"))
                 .putFields("enumInt", getSimpleValue("MINUS_ONE"))
-                .putFields("complex", getComplex("SubMessage", ImmutableMap.of(
+                .putFields("complex", getComplex("SubMessage", Map.of(
                         "field1", "field1",
                         "field2", "field2"
                 )))
@@ -301,11 +275,11 @@ class ProtoToIMessageConverterWithDictionaryTest extends AbstractProtoToIMessage
 
     private Value getComplexList() {
         return Value.newBuilder().setListValue(ListValue.newBuilder()
-                .addValues(0, getComplex("SubMessage", ImmutableMap.of(
+                .addValues(0, getComplex("SubMessage", Map.of(
                         "field1", "field1",
                         "field2", "field2"
                 )))
-                .addValues(1, getComplex("SubMessage", ImmutableMap.of(
+                .addValues(1, getComplex("SubMessage", Map.of(
                         "field1", "field3",
                         "field2", "field4"
                 )))
