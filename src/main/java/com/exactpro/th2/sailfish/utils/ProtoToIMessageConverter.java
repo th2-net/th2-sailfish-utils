@@ -19,12 +19,12 @@ import static com.exactpro.sf.common.impl.messages.xml.configuration.JavaType.JA
 import static com.google.protobuf.TextFormat.shortDebugString;
 import static java.util.Objects.requireNonNull;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
-import com.exactpro.sf.common.messages.structures.IAttributeStructure;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.text.StringEscapeUtils;
 import org.jetbrains.annotations.NotNull;
@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 
 import com.exactpro.sf.aml.scriptutil.StaticUtil;
 import com.exactpro.sf.common.messages.IMessage;
+import com.exactpro.sf.common.messages.structures.IAttributeStructure;
 import com.exactpro.sf.common.messages.structures.IDictionaryStructure;
 import com.exactpro.sf.common.messages.structures.IFieldStructure;
 import com.exactpro.sf.common.messages.structures.IMessageStructure;
@@ -154,12 +155,15 @@ public class ProtoToIMessageConverter {
         if (dictionary == null) {
             throw new IllegalStateException("Cannot convert using dictionary without dictionary set");
         }
-        IMessageStructure messageStructure = requireNonNull(dictionary.getMessages().get(messageType), "Unknown message: " + messageType);
-        return convertByDictionary(fieldsMap, messageStructure);
-    }
-
-    private IMessage convertByDictionary(Message message, String messageType) {
-        return convertByDictionary(message.getFieldsMap(), messageType);
+        IMessageStructure messageStructure = dictionary.getMessages().get(messageType);
+        if (messageStructure == null) {
+            throw new MessageConvertException(messageType, "Unknown message: " + messageType);
+        }
+        try {
+            return convertByDictionary(fieldsMap, messageStructure);
+        } catch (RuntimeException e) {
+            throw new MessageConvertException(messageStructure.getName(), e);
+        }
     }
 
     private IMessage convertByDictionary(Map<String, Value> fieldsMap, @NotNull IFieldStructure messageStructure) {
@@ -170,13 +174,12 @@ public class ProtoToIMessageConverter {
 
             IFieldStructure fieldStructure = messageStructure.getFields().get(fieldName);
             if (fieldStructure == null) {
-                throw new UnknownFieldException(messageStructure.getName() + " doesn't contain field " + fieldName);
+                throw new MessageConvertException(fieldName, "Filed '" + fieldName + "' isn't found in message structure");
             }
-
             try {
                 traverseField(message, fieldName, fieldValue, fieldStructure);
-            } catch (UnknownFieldException e) {
-                throw new UnknownFieldException(messageStructure.getName() + '.' + e.getMessage(), e);
+            } catch (RuntimeException e) {
+                throw new MessageConvertException(fieldStructure.getName(), e);
             }
         }
         logger.debug("Converted message by dictionary: {}", message);
@@ -278,12 +281,18 @@ public class ProtoToIMessageConverter {
     }
 
     private List<IMessage> convertComplexList(ListValue listValue, IFieldStructure fieldStructure) {
-        return listValue.getValuesList()
-                .stream()
-                .map(value -> {
-                    checkKind(value, fieldStructure.getName(), KindCase.MESSAGE_VALUE);
-                    return convertByDictionary(value.getMessageValue().getFieldsMap(), fieldStructure);
-                })
-                .collect(Collectors.toList());
+        List<Value> valuesList = listValue.getValuesList();
+        int size = valuesList.size();
+        List<IMessage> result = new ArrayList<>(size);
+        for (int i = 0; i < size; i++) {
+            Value value = valuesList.get(i);
+            try {
+                checkKind(value, fieldStructure.getName(), KindCase.MESSAGE_VALUE);
+                result.add(convertByDictionary(value.getMessageValue().getFieldsMap(), fieldStructure));
+            } catch (RuntimeException e) {
+                throw new MessageConvertException("[" + i + "]", e);
+            }
+        }
+        return result;
     }
 }
