@@ -44,6 +44,8 @@
             <field name="boolN" type="java.lang.Boolean"/>
             <field name="complexList" reference="SubComplexListId"/>
             <field name="complex" reference="SubMessageId"/>
+            <field name="msgCollection" reference="SubMessageId" isCollection="true"/>
+            <field name="simpleCollection" type="java.lang.Integer" isCollection="true"/>
             <field name="enumInt" reference="enumIntId"/>
             <field name="nullField" type="java.math.BigDecimal"/>
         </message>

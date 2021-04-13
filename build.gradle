@@ -23,14 +23,6 @@ repositories {
         url 'https://dl.bintray.com/exactpro/th2'
     }
     maven {
-        name 'Bintray sf'
-        url 'https://dl.bintray.com/exactpro/sailfish'
-    }
-    maven {
-        name 'Artifactory-snapshot-oss'
-        url 'https://oss.jfrog.org/artifactory/libs-snapshot'
-    }
-    maven {
             name 'Sonatype_snapshots'
             url 'https://s01.oss.sonatype.org/content/repositories/snapshots/'
     }
@@ -63,10 +55,10 @@ dependencies {
     implementation "com.google.protobuf:protobuf-java-util"
 
     // Use JUnit Jupiter API for testing.
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.1'
 
     // Use JUnit Jupiter Engine for testing.
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.6.2'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.1'
 }
 
 java {
