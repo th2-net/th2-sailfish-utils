@@ -19,12 +19,13 @@ import static com.exactpro.sf.common.impl.messages.xml.configuration.JavaType.JA
 import static com.google.protobuf.TextFormat.shortDebugString;
 import static java.util.Objects.requireNonNull;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
-import com.exactpro.sf.common.messages.structures.IAttributeStructure;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.text.StringEscapeUtils;
 import org.jetbrains.annotations.NotNull;
@@ -34,6 +35,7 @@ import org.slf4j.LoggerFactory;
 
 import com.exactpro.sf.aml.scriptutil.StaticUtil;
 import com.exactpro.sf.common.messages.IMessage;
+import com.exactpro.sf.common.messages.structures.IAttributeStructure;
 import com.exactpro.sf.common.messages.structures.IDictionaryStructure;
 import com.exactpro.sf.common.messages.structures.IFieldStructure;
 import com.exactpro.sf.common.messages.structures.IMessageStructure;
@@ -154,12 +156,20 @@ public class ProtoToIMessageConverter {
         if (dictionary == null) {
             throw new IllegalStateException("Cannot convert using dictionary without dictionary set");
         }
-        IMessageStructure messageStructure = requireNonNull(dictionary.getMessages().get(messageType), "Unknown message: " + messageType);
-        return convertByDictionary(fieldsMap, messageStructure);
+        IMessageStructure messageStructure = dictionary.getMessages().get(messageType);
+        if (messageStructure == null) {
+            throw new IllegalStateException("Message '" + messageType + "' hasn't been found in dictionary");
+        }
+        try {
+            return convertByDictionary(fieldsMap, messageStructure);
+        } catch (RuntimeException e) {
+            throw new MessageConvertException(messageStructure.getName(), e);
+        }
     }
 
-    private IMessage convertByDictionary(Message message, String messageType) {
-        return convertByDictionary(message.getFieldsMap(), messageType);
+    private IMessage convertByDictionary(Value value, @NotNull IFieldStructure messageStructure) {
+        checkKind(value, messageStructure.getName(), KindCase.MESSAGE_VALUE);
+        return convertByDictionary(value.getMessageValue().getFieldsMap(), messageStructure);
     }
 
     private IMessage convertByDictionary(Map<String, Value> fieldsMap, @NotNull IFieldStructure messageStructure) {
@@ -167,8 +177,16 @@ public class ProtoToIMessageConverter {
         for (Entry<String, Value> fieldEntry : fieldsMap.entrySet()) {
             String fieldName = fieldEntry.getKey();
             Value fieldValue = fieldEntry.getValue();
+
             IFieldStructure fieldStructure = messageStructure.getFields().get(fieldName);
-            traverseField(message, fieldName, fieldValue, fieldStructure);
+            if (fieldStructure == null) {
+                throw new IllegalStateException("Field '" + fieldName + "' hasn't been found in message structure: " + messageStructure.getName());
+            }
+            try {
+                traverseField(message, fieldName, fieldValue, fieldStructure);
+            } catch (RuntimeException e) {
+                throw new MessageConvertException(fieldStructure.getName(), e);
+            }
         }
         logger.debug("Converted message by dictionary: {}", message);
         return message;
@@ -201,23 +219,19 @@ public class ProtoToIMessageConverter {
                 .collect(Collectors.toList());
     }
 
-    private void traverseField(IMessage message, String fieldName, Value value, IFieldStructure fieldStructure) {
-        if (fieldStructure != null) {
-            Object convertedValue = fieldStructure.isComplex()
-                    ? processComplex(value, fieldStructure)
-                    : convertSimple(value, fieldStructure);
-            message.addField(fieldName, convertedValue);
-        }
+    private void traverseField(IMessage message, String fieldName, Value value, @NotNull IFieldStructure fieldStructure) {
+        Object convertedValue = fieldStructure.isComplex()
+                ? processComplex(value, fieldStructure)
+                : convertSimple(value, fieldStructure);
+        message.addField(fieldName, convertedValue);
     }
 
-    private Object convertSimple(Value value, IFieldStructure fieldStructure) {
+    private Object convertSimple(Value listEvent, IFieldStructure fieldStructure) {
         if (fieldStructure.isCollection()) {
-            return value.getListValue().getValuesList()
-                    .stream()
-                    .map(element -> convertToTarget(element, fieldStructure))
-                    .collect(Collectors.toList());
+            checkKind(listEvent, fieldStructure.getName(), KindCase.LIST_VALUE);
+            return convertList(listEvent.getListValue(), fieldStructure, this::convertToTarget);
         }
-        return convertToTarget(value, fieldStructure);
+        return convertToTarget(listEvent, fieldStructure);
     }
 
     @Nullable
@@ -227,9 +241,7 @@ public class ProtoToIMessageConverter {
             if (kindCase == KindCase.NULL_VALUE || kindCase == KindCase.KIND_NOT_SET) {
                 return null; // skip null value conversion
             }
-            if (kindCase != KindCase.SIMPLE_VALUE) {
-                throw new IllegalArgumentException(String.format("Expected simple value but got '%s' for field '%s'", kindCase, fieldStructure.getName()));
-            }
+            checkKind(value, fieldStructure.getName(), KindCase.SIMPLE_VALUE);
             String simpleValue = value.getSimpleValue();
             if (fieldStructure.isEnum()) {
                 simpleValue = convertEnumValue(fieldStructure, simpleValue);
@@ -258,15 +270,34 @@ public class ProtoToIMessageConverter {
 
     private Object processComplex(Value value, IFieldStructure fieldStructure) {
         if (fieldStructure.isCollection()) {
+            checkKind(value, fieldStructure.getName(), KindCase.LIST_VALUE);
             return convertComplexList(value.getListValue(), fieldStructure);
         }
-        return convertByDictionary(value.getMessageValue().getFieldsMap(), fieldStructure);
+        return convertByDictionary(value, fieldStructure);
+    }
+
+    private void checkKind(Value value, String fieldName, KindCase expected) {
+        if (value.getKindCase() != expected) {
+            throw new IllegalArgumentException(String.format("Expected '%s' value but got '%s' for field '%s'", expected, value.getKindCase(), fieldName));
+        }
     }
 
     private List<IMessage> convertComplexList(ListValue listValue, IFieldStructure fieldStructure) {
-        return listValue.getValuesList()
-                .stream()
-                .map(value -> convertByDictionary(value.getMessageValue(), fieldStructure.getReferenceName()))
-                .collect(Collectors.toList());
+        return convertList(listValue, fieldStructure, this::convertByDictionary);
+    }
+
+    private <T> List<T> convertList(ListValue listValue, IFieldStructure fieldStructure, BiFunction<Value, IFieldStructure, T> mapper)  {
+        int size = listValue.getValuesCount();
+        List<T> result = new ArrayList<>(size);
+        for (int i = 0; i < size; i++) {
+            Value element = listValue.getValues(i);
+            try {
+                result.add(mapper.apply(element, fieldStructure));
+            } catch (RuntimeException e) {
+                throw new MessageConvertException("[" + i + "]", e);
+            }
+        }
+
+        return result;
     }
 }
