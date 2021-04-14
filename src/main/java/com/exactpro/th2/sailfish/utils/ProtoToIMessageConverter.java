@@ -18,6 +18,7 @@ package com.exactpro.th2.sailfish.utils;
 import static com.exactpro.sf.common.impl.messages.xml.configuration.JavaType.JAVA_LANG_BOOLEAN;
 import static com.google.protobuf.TextFormat.shortDebugString;
 import static java.util.Objects.requireNonNull;
+import static org.apache.commons.lang3.ObjectUtils.defaultIfNull;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -173,7 +174,8 @@ public class ProtoToIMessageConverter {
     }
 
     private IMessage convertByDictionary(Map<String, Value> fieldsMap, @NotNull IFieldStructure messageStructure) {
-        IMessage message = messageFactory.createMessage(dictionaryURI, messageStructure.getName());
+        IMessage message = messageFactory.createMessage(dictionaryURI,
+                defaultIfNull(messageStructure.getReferenceName(), messageStructure.getName()));
         for (Entry<String, Value> fieldEntry : fieldsMap.entrySet()) {
             String fieldName = fieldEntry.getKey();
             Value fieldValue = fieldEntry.getValue();

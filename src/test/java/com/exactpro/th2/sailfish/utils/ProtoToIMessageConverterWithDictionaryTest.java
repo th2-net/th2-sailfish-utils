@@ -16,6 +16,9 @@
 
 package com.exactpro.th2.sailfish.utils;
 
+import static java.util.Map.entry;
+import static java.util.Objects.requireNonNull;
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -24,7 +27,9 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.Map;
+import java.util.Objects;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -64,7 +69,14 @@ class ProtoToIMessageConverterWithDictionaryTest extends AbstractProtoToIMessage
         Message protoMessage = createMessage().build();
         MessageWrapper actualIMessage = converter.fromProtoMessage(protoMessage, true);
         MessageWrapper expectedIMessage = createExpectedIMessage();
-        assertPassed(expectedIMessage, actualIMessage);
+        assertAll(
+                () -> assertPassed(expectedIMessage, actualIMessage),
+                () -> assertComplexFieldsHasCorrectNames(actualIMessage, Map.ofEntries(
+                        entry("complex", "SubMessage"),
+                        entry("list", "SubMessage"),
+                        entry("complexList", "SubComplexList")
+                ))
+        );
     }
 
     @Test
@@ -234,6 +246,39 @@ class ProtoToIMessageConverterWithDictionaryTest extends AbstractProtoToIMessage
                 },
                 "Conversion for message with incorrect type of field with list complex value should fails");
         assertEquals("Message path: RootWithNestedComplex.msgCollection.[0], cause: Expected 'MESSAGE_VALUE' value but got 'SIMPLE_VALUE' for field 'msgCollection'", exception.getMessage());
+    }
+
+    private void assertMessageName(Map<String, String> fieldNameToMessageName, String fieldName, IMessage msg) {
+        String expectedMessageName = requireNonNull(fieldNameToMessageName.get(fieldName),
+                () -> "Field " + fieldName + " is complex but is not specified to check");
+        assertEquals(expectedMessageName, msg.getName());
+    }
+
+    private void assertComplexFieldsHasCorrectNames(IMessage message, Map<String, String> fieldNameToMessageName) {
+        for (String fieldName : message.getFieldNames()) {
+            Object field = message.getField(fieldName);
+            if (field instanceof IMessage) {
+                IMessage msg = (IMessage)field;
+                assertMessageName(fieldNameToMessageName, fieldName, msg);
+                assertComplexFieldsHasCorrectNames(msg, fieldNameToMessageName);
+                continue;
+            }
+            if (field instanceof Collection<?>) {
+                var collection = (Collection<?>)field;
+                if (collection.isEmpty()) {
+                    continue;
+                }
+                Object firstEl = collection.iterator().next();
+                if (!(firstEl instanceof IMessage)) {
+                    continue;
+                }
+                for (Object obj : collection) {
+                    IMessage msg = (IMessage)obj;
+                    assertMessageName(fieldNameToMessageName, fieldName, msg);
+                    assertComplexFieldsHasCorrectNames(msg, fieldNameToMessageName);
+                }
+            }
+        }
     }
 
     private MessageWrapper createExpectedIMessage() {
