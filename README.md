@@ -7,7 +7,7 @@ They are used in several th2 projects to reuse Sailfish features: message compar
 
 ### 3.3.3
 
-+ Add message properties to the IMessage from proto Message
++ Add message properties to the Sailfish IMessage from th2 proto Message
 
 ### 3.3.1
 
