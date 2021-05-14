@@ -35,12 +35,14 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import com.exactpro.sf.common.messages.IMessage;
+import com.exactpro.sf.common.messages.MetadataExtensions;
 import com.exactpro.sf.common.messages.structures.IDictionaryStructure;
 import com.exactpro.sf.common.messages.structures.loaders.XmlDictionaryStructureLoader;
 import com.exactpro.sf.configuration.suri.SailfishURI;
 import com.exactpro.th2.common.grpc.FilterOperation;
 import com.exactpro.th2.common.grpc.ListValue;
 import com.exactpro.th2.common.grpc.Message;
+import com.exactpro.th2.common.grpc.Message.Builder;
 import com.exactpro.th2.common.grpc.MessageFilter;
 import com.exactpro.th2.common.grpc.NullValue;
 import com.exactpro.th2.common.grpc.Value;
@@ -66,7 +68,11 @@ class ProtoToIMessageConverterWithDictionaryTest extends AbstractProtoToIMessage
 
     @Test
     void convertByDictionaryPositive() {
-        Message protoMessage = createMessage().build();
+        Builder builder = createMessage();
+        Map<String, String> properties = Map.of("key", "value");
+        builder.getMetadataBuilder().putAllProperties(properties);
+        Message protoMessage = builder
+                .build();
         MessageWrapper actualIMessage = converter.fromProtoMessage(protoMessage, true);
         MessageWrapper expectedIMessage = createExpectedIMessage();
         assertAll(
@@ -75,7 +81,8 @@ class ProtoToIMessageConverterWithDictionaryTest extends AbstractProtoToIMessage
                         entry("complex", "SubMessage"),
                         entry("list", "SubMessage"),
                         entry("complexList", "SubComplexList")
-                ))
+                )),
+                () -> assertEquals(properties, MetadataExtensions.getMessageProperties(actualIMessage.getMetaData()))
         );
     }
 
