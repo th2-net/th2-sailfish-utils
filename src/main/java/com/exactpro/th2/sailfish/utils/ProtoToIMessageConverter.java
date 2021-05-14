@@ -36,6 +36,9 @@ import org.slf4j.LoggerFactory;
 
 import com.exactpro.sf.aml.scriptutil.StaticUtil;
 import com.exactpro.sf.common.messages.IMessage;
+import com.exactpro.sf.common.messages.IMetadata;
+import com.exactpro.sf.common.messages.MetadataExtensions;
+import com.exactpro.sf.common.messages.MsgMetaData;
 import com.exactpro.sf.common.messages.structures.IAttributeStructure;
 import com.exactpro.sf.common.messages.structures.IDictionaryStructure;
 import com.exactpro.sf.common.messages.structures.IFieldStructure;
@@ -91,6 +94,11 @@ public class ProtoToIMessageConverter {
                 : convertWithoutDictionary(receivedMessage.getFieldsMap(), messageType);
         MessageWrapper messageWrapper = new MessageWrapper(convertedMessage);
         messageWrapper.setMessageId(receivedMessage.getMetadata().getId());
+        Map<String, String> propertiesMap = receivedMessage.getMetadata().getPropertiesMap();
+        if (!propertiesMap.isEmpty()) {
+            IMetadata metaData = messageWrapper.getMetaData();
+            MetadataExtensions.setMessageProperties(metaData, propertiesMap);
+        }
         return messageWrapper;
     }
 
