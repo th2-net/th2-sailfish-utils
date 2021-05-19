@@ -249,25 +249,20 @@ public class ProtoToIMessageConverter {
 
     @Nullable
     private Object convertToTarget(Value value, IFieldStructure fieldStructure) {
-        try {
-            KindCase kindCase = value.getKindCase();
-            if (kindCase == KindCase.NULL_VALUE || kindCase == KindCase.KIND_NOT_SET) {
-                return null; // skip null value conversion
-            }
-            checkKind(value, fieldStructure.getName(), KindCase.SIMPLE_VALUE);
-            String simpleValue = value.getSimpleValue();
-            if (fieldStructure.isEnum()) {
-                simpleValue = convertEnumValue(fieldStructure, simpleValue);
-            }
-            // TODO may be place its logic into the MultiConverter
-            if (fieldStructure.getJavaType() == JAVA_LANG_BOOLEAN) {
-                return BooleanUtils.toBooleanObject(simpleValue);
-            }
-            return convertJavaType(simpleValue, fieldStructure.getJavaType());
-        } catch (Exception e) {
-            logger.error("Could not convert {} value", value, e);
-            throw new RuntimeException(e);
+        KindCase kindCase = value.getKindCase();
+        if (kindCase == KindCase.NULL_VALUE || kindCase == KindCase.KIND_NOT_SET) {
+            return null; // skip null value conversion
         }
+        checkKind(value, fieldStructure.getName(), KindCase.SIMPLE_VALUE);
+        String simpleValue = value.getSimpleValue();
+        if (fieldStructure.isEnum()) {
+            simpleValue = convertEnumValue(fieldStructure, simpleValue);
+        }
+        // TODO may be place its logic into the MultiConverter
+        if (fieldStructure.getJavaType() == JAVA_LANG_BOOLEAN) {
+            return BooleanUtils.toBooleanObject(simpleValue);
+        }
+        return convertJavaType(simpleValue, fieldStructure.getJavaType());
     }
 
     private static final Map<JavaType, IConverter<?>> CONVERTERS = initConverters();
