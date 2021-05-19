@@ -44,7 +44,7 @@ import static com.exactpro.sf.comparison.MessageComparator.compare;
 @BenchmarkMode(Mode.AverageTime)
 //@BenchmarkMode({Mode.AverageTime, Mode.SingleShotTime, Mode.Throughput})
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
-@Warmup(iterations = 0)
+@Warmup(iterations = 5)
 @Fork(1)
 public class SampleBenchmark {
     public static final Logger LOGGER = LoggerFactory.getLogger(SampleBenchmark.class);
@@ -71,7 +71,7 @@ public class SampleBenchmark {
 
     public static void main(String[] args) throws RunnerException {
         Options opt = new OptionsBuilder()
-                .include(SampleBenchmark.class.getSimpleName()).measurementIterations(5).build();
+                .include(SampleBenchmark.class.getSimpleName()).measurementIterations(10).build();
 
         new Runner(opt).run();
     }
