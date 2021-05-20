@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,12 +21,29 @@ import static java.util.Objects.requireNonNull;
 import static org.apache.commons.lang3.ObjectUtils.defaultIfNull;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
+import com.exactpro.sf.common.impl.messages.xml.configuration.JavaType;
+import com.exactpro.sf.comparison.conversion.ConversionException;
+import com.exactpro.sf.comparison.conversion.IConverter;
+import com.exactpro.sf.comparison.conversion.impl.BooleanConverter;
+import com.exactpro.sf.comparison.conversion.impl.ByteConverter;
+import com.exactpro.sf.comparison.conversion.impl.IntegerConverter;
+import com.exactpro.sf.comparison.conversion.impl.ShortConverter;
+import com.exactpro.sf.comparison.conversion.impl.BigDecimalConverter;
+import com.exactpro.sf.comparison.conversion.impl.CharacterConverter;
+import com.exactpro.sf.comparison.conversion.impl.FloatConverter;
+import com.exactpro.sf.comparison.conversion.impl.LocalDateConverter;
+import com.exactpro.sf.comparison.conversion.impl.LocalDateTimeConverter;
+import com.exactpro.sf.comparison.conversion.impl.LocalTimeConverter;
+import com.exactpro.sf.comparison.conversion.impl.LongConverter;
+import com.exactpro.sf.comparison.conversion.impl.DoubleConverter;
+import com.exactpro.sf.comparison.conversion.impl.StringConverter;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.text.StringEscapeUtils;
 import org.jetbrains.annotations.NotNull;
@@ -38,13 +55,11 @@ import com.exactpro.sf.aml.scriptutil.StaticUtil;
 import com.exactpro.sf.common.messages.IMessage;
 import com.exactpro.sf.common.messages.IMetadata;
 import com.exactpro.sf.common.messages.MetadataExtensions;
-import com.exactpro.sf.common.messages.MsgMetaData;
 import com.exactpro.sf.common.messages.structures.IAttributeStructure;
 import com.exactpro.sf.common.messages.structures.IDictionaryStructure;
 import com.exactpro.sf.common.messages.structures.IFieldStructure;
 import com.exactpro.sf.common.messages.structures.IMessageStructure;
 import com.exactpro.sf.common.util.StringUtil;
-import com.exactpro.sf.comparison.conversion.MultiConverter;
 import com.exactpro.sf.configuration.suri.SailfishURI;
 import com.exactpro.sf.externalapi.IMessageFactoryProxy;
 import com.exactpro.th2.common.grpc.FilterOperation;
@@ -246,26 +261,49 @@ public class ProtoToIMessageConverter {
 
     @Nullable
     private Object convertToTarget(Value value, IFieldStructure fieldStructure) {
-        try {
-            KindCase kindCase = value.getKindCase();
-            if (kindCase == KindCase.NULL_VALUE || kindCase == KindCase.KIND_NOT_SET) {
-                return null; // skip null value conversion
-            }
-            checkKind(value, fieldStructure.getName(), KindCase.SIMPLE_VALUE);
-            String simpleValue = value.getSimpleValue();
-            if (fieldStructure.isEnum()) {
-                simpleValue = convertEnumValue(fieldStructure, simpleValue);
-            }
-            // TODO may be place its logic into the MultiConverter
-            if (fieldStructure.getJavaType() == JAVA_LANG_BOOLEAN) {
-                return BooleanUtils.toBooleanObject(simpleValue);
-            }
-            return MultiConverter.convert(simpleValue,
-                        Class.forName(fieldStructure.getJavaType().value()));
-        } catch (ClassNotFoundException e) {
-            logger.error("Could not convert {} value", value, e);
-            throw new RuntimeException(e);
+        KindCase kindCase = value.getKindCase();
+        if (kindCase == KindCase.NULL_VALUE || kindCase == KindCase.KIND_NOT_SET) {
+            return null; // skip null value conversion
         }
+        checkKind(value, fieldStructure.getName(), KindCase.SIMPLE_VALUE);
+        String simpleValue = value.getSimpleValue();
+        if (fieldStructure.isEnum()) {
+            simpleValue = convertEnumValue(fieldStructure, simpleValue);
+        }
+        // TODO may be place its logic into the MultiConverter
+        if (fieldStructure.getJavaType() == JAVA_LANG_BOOLEAN) {
+            return BooleanUtils.toBooleanObject(simpleValue);
+        }
+        return convertJavaType(simpleValue, fieldStructure.getJavaType());
+    }
+
+    private static final Map<JavaType, IConverter<?>> CONVERTERS = initConverters();
+
+    private static Map<JavaType, IConverter<?>> initConverters() {
+        Map<JavaType, IConverter<?>> target = new HashMap<>();
+        target.put(JavaType.JAVA_LANG_BOOLEAN, new BooleanConverter());
+        target.put(JavaType.JAVA_LANG_BYTE, new ByteConverter());
+        target.put(JavaType.JAVA_LANG_SHORT, new ShortConverter());
+        target.put(JavaType.JAVA_LANG_INTEGER, new IntegerConverter());
+        target.put(JavaType.JAVA_LANG_LONG, new LongConverter());
+        target.put(JavaType.JAVA_LANG_FLOAT, new FloatConverter());
+        target.put(JavaType.JAVA_LANG_DOUBLE, new DoubleConverter());
+        target.put(JavaType.JAVA_MATH_BIG_DECIMAL, new BigDecimalConverter());
+        target.put(JavaType.JAVA_LANG_CHARACTER, new CharacterConverter());
+        target.put(JavaType.JAVA_LANG_STRING, new StringConverter());
+        target.put(JavaType.JAVA_TIME_LOCAL_DATE, new LocalDateConverter());
+        target.put(JavaType.JAVA_TIME_LOCAL_TIME, new LocalTimeConverter());
+        target.put(JavaType.JAVA_TIME_LOCAL_DATE_TIME, new LocalDateTimeConverter());
+        return target;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> T convertJavaType(Object value,  JavaType javaType) {
+        IConverter<?> converter = CONVERTERS.get(javaType);
+        if (converter == null) {
+            throw new ConversionException("No converter for type: " + javaType.value());
+        }
+        return (T)converter.convert(value);
     }
 
     private String convertEnumValue(IFieldStructure fieldStructure, String value) {

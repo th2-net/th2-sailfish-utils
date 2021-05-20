@@ -34,6 +34,7 @@ repositories {
     }
 }
 
+
 group = 'com.exactpro.th2'
 version = release_version
 
@@ -55,6 +56,9 @@ dependencies {
 
     // Use JUnit Jupiter Engine for testing.
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.1'
+
+    testImplementation 'org.openjdk.jmh:jmh-core:1.28'
+    testAnnotationProcessor 'org.openjdk.jmh:jmh-generator-annprocess:1.28'
 }
 
 java {
