@@ -4,12 +4,18 @@ plugins {
     id 'maven-publish'
     id "io.github.gradle-nexus.publish-plugin" version "1.0.0"
     id 'signing'
+    id 'com.github.hierynomus.license' version '0.15.0'
 }
 
 ext {
     sharedDir           = file("${project.rootDir}/shared")
 
     sailfishVersion     = '3.2.1049'
+}
+
+downloadLicenses {
+    includeProjectDependencies = true
+    dependencyConfiguration = "compileClasspath"
 }
 
 repositories {
