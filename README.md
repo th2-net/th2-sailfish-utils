@@ -1,9 +1,12 @@
-# th2 Sailfish Utils (3.3.4)
+# th2 Sailfish Utils (3.3.5)
 
-This library contains classes to convert messages from th2 to Sailfish format and vice versa. 
-They are used in several th2 projects to reuse Sailfish features: message comparison, codec/connect implementations, etc.
+This library contains classes to convert messages from th2 to Sailfish format and vice versa. They are used in several th2 projects to reuse Sailfish features: message comparison, codec/connect implementations, etc.
 
 ## Release Notes
+
+### 3.3.5
+
++ Use newer version of `com.exactpro.sf:sailfish-core` which fixes representation of `BigDecimal` fields in string representation of `MapMessage`
 
 ### 3.3.4
 
