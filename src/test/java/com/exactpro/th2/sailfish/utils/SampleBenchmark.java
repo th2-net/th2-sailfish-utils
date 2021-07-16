@@ -22,6 +22,7 @@ import com.exactpro.sf.comparison.ComparatorSettings;
 import com.exactpro.sf.comparison.ComparisonResult;
 import com.exactpro.sf.configuration.suri.SailfishURI;
 import com.exactpro.th2.common.grpc.*;
+import com.exactpro.th2.sailfish.utils.factory.DefaultMessageFactoryProxy;
 import com.google.common.collect.ImmutableList;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
