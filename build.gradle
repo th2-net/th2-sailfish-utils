@@ -9,7 +9,7 @@ plugins {
 ext {
     sharedDir           = file("${project.rootDir}/shared")
 
-    sailfishVersion     = '3.2.1049'
+    sailfishVersion = '3.2.1622'
 }
 
 repositories {
@@ -44,8 +44,7 @@ targetCompatibility = 11
 dependencies {
     api platform('com.exactpro.th2:bom:3.0.0')
     api 'com.exactpro.th2:grpc-common:2.5.2'
-
-    implementation "com.exactpro.sf:sailfish-core:${sailfishVersion}"
+    api "com.exactpro.sf:sailfish-core:${sailfishVersion}"
 
     implementation "org.slf4j:slf4j-log4j12"
     implementation "org.slf4j:slf4j-api"
