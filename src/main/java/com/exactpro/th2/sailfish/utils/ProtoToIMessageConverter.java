@@ -20,6 +20,7 @@ import static com.google.protobuf.TextFormat.shortDebugString;
 import static java.util.Objects.requireNonNull;
 import static org.apache.commons.lang3.ObjectUtils.defaultIfNull;
 
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -29,6 +30,7 @@ import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 import com.exactpro.sf.common.impl.messages.xml.configuration.JavaType;
+import com.exactpro.sf.common.util.EPSCommonException;
 import com.exactpro.sf.comparison.conversion.ConversionException;
 import com.exactpro.sf.comparison.conversion.IConverter;
 import com.exactpro.sf.comparison.conversion.impl.BooleanConverter;
@@ -181,6 +183,9 @@ public class ProtoToIMessageConverter {
         if (value.hasMessageFilter()) {
             return fromProtoFilter(value.getMessageFilter(), fieldname);
         }
+        if (value.hasComplexFilter()) {
+            return new ListContainFilter(value.getComplexFilter().getComplexValuesList());
+        }
         return toSimpleFilter(value.getOperation(), value.getSimpleFilter());
     }
 
@@ -195,6 +200,15 @@ public class ProtoToIMessageConverter {
                 return StaticUtil.nullFilter(0, null);
             case NOT_EMPTY:
                 return StaticUtil.notNullFilter(0, null);
+            case LIKE:
+                return new RegExFilter(simpleFilter);
+            case LESS:
+            case MORE:
+                try {
+                    return new MathFilter(operation, simpleFilter);
+                } catch (ParseException ex) {
+                    throw new EPSCommonException("Failed to create math filter with incorrect params " + operation, ex);
+                }
             default:
                 throw new IllegalArgumentException("Unsupported operation " + operation);
         }
