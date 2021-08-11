@@ -18,6 +18,8 @@ package com.exactpro.th2.sailfish.utils;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.text.ParseException;
+import java.util.Locale;
+import java.util.Objects;
 
 import com.exactpro.sf.aml.scriptutil.ExpressionResult;
 import com.exactpro.sf.aml.scriptutil.StaticUtil.IFilter;
@@ -29,8 +31,16 @@ public class MathFilter implements IFilter {
     private final String stringFormatOperation;
     private final FilterOperation operation;
 
-    public MathFilter(FilterOperation operation, String value) throws ParseException {
-        this.value = NumberFormat.getInstance().parse(value);
+    public MathFilter(FilterOperation operation, String value) {
+        Objects.requireNonNull(value);
+        if (value.contains(",")) {
+            value = value.replace(',', '.');
+        }
+        try {
+            this.value = NumberFormat.getInstance(Locale.getDefault()).parse(value);
+        } catch (ParseException ex) {
+            throw new IllegalArgumentException("Failed to parse value to Number. " + value.getClass().getSimpleName(), ex);
+        }
         switch (operation) {
         case MORE:
             this.stringFormatOperation = ">";
@@ -38,16 +48,27 @@ public class MathFilter implements IFilter {
         case LESS:
             this.stringFormatOperation = "<";
             break;
+        case NOT_MORE:
+            this.stringFormatOperation = "<=";
+            break;
+        case NOT_LESS:
+            this.stringFormatOperation = ">=";
+            break;
         default:
             throw new IllegalArgumentException("Incorrect math operation " + operation);
         }
+        Objects.requireNonNull(operation);
         this.operation = operation;
     }
 
     @Override
     public ExpressionResult validate(Object value) throws RuntimeException {
+        Objects.requireNonNull(value);
         if (!(value instanceof String)) {
             throw new IllegalArgumentException("Incorrect value type " + value.getClass().getSimpleName());
+        }
+        if (((String)value).contains(",")) {
+            value = ((String)value).replace(',', '.');
         }
         try {
             value = NumberFormat.getInstance().parse((String)value);
@@ -55,12 +76,19 @@ public class MathFilter implements IFilter {
             throw new IllegalArgumentException("Failed to parse value to Number. " + value.getClass().getSimpleName(), e);
         }
         boolean result = false;
+        int compareResult = compareValues((Number)value, this.value);
         switch (operation) {
             case MORE:
-                result = new BigDecimal(value.toString()).compareTo(new BigDecimal(this.value.toString())) > 0;
+                result = compareResult > 0;
                 break;
             case LESS:
-                result = new BigDecimal(value.toString()).compareTo(new BigDecimal(this.value.toString())) < 0;
+                result = compareResult < 0;
+                break;
+            case NOT_MORE:
+                result = compareResult <= 0;
+                break;
+            case NOT_LESS:
+                result = compareResult >= 0;
                 break;
         }
         return ExpressionResult.create(result);
@@ -84,5 +112,12 @@ public class MathFilter implements IFilter {
     @Override
     public boolean hasValue() {
         return true;
+    }
+
+    private int compareValues(Number first, Number second) {
+        if (first instanceof Double || first instanceof Float || second instanceof Double || second instanceof Float) {
+            return new BigDecimal(first.toString()).compareTo(new BigDecimal(second.toString()));
+        }
+        return ((Long)first).compareTo(second.longValue());
     }
 }

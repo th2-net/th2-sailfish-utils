@@ -20,7 +20,6 @@ import static com.google.protobuf.TextFormat.shortDebugString;
 import static java.util.Objects.requireNonNull;
 import static org.apache.commons.lang3.ObjectUtils.defaultIfNull;
 
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -29,23 +28,6 @@ import java.util.Map.Entry;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
-import com.exactpro.sf.common.impl.messages.xml.configuration.JavaType;
-import com.exactpro.sf.common.util.EPSCommonException;
-import com.exactpro.sf.comparison.conversion.ConversionException;
-import com.exactpro.sf.comparison.conversion.IConverter;
-import com.exactpro.sf.comparison.conversion.impl.BooleanConverter;
-import com.exactpro.sf.comparison.conversion.impl.ByteConverter;
-import com.exactpro.sf.comparison.conversion.impl.IntegerConverter;
-import com.exactpro.sf.comparison.conversion.impl.ShortConverter;
-import com.exactpro.sf.comparison.conversion.impl.BigDecimalConverter;
-import com.exactpro.sf.comparison.conversion.impl.CharacterConverter;
-import com.exactpro.sf.comparison.conversion.impl.FloatConverter;
-import com.exactpro.sf.comparison.conversion.impl.LocalDateConverter;
-import com.exactpro.sf.comparison.conversion.impl.LocalDateTimeConverter;
-import com.exactpro.sf.comparison.conversion.impl.LocalTimeConverter;
-import com.exactpro.sf.comparison.conversion.impl.LongConverter;
-import com.exactpro.sf.comparison.conversion.impl.DoubleConverter;
-import com.exactpro.sf.comparison.conversion.impl.StringConverter;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.text.StringEscapeUtils;
 import org.jetbrains.annotations.NotNull;
@@ -54,6 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.exactpro.sf.aml.scriptutil.StaticUtil;
+import com.exactpro.sf.common.impl.messages.xml.configuration.JavaType;
 import com.exactpro.sf.common.messages.IMessage;
 import com.exactpro.sf.common.messages.IMetadata;
 import com.exactpro.sf.common.messages.MetadataExtensions;
@@ -62,6 +45,21 @@ import com.exactpro.sf.common.messages.structures.IDictionaryStructure;
 import com.exactpro.sf.common.messages.structures.IFieldStructure;
 import com.exactpro.sf.common.messages.structures.IMessageStructure;
 import com.exactpro.sf.common.util.StringUtil;
+import com.exactpro.sf.comparison.conversion.ConversionException;
+import com.exactpro.sf.comparison.conversion.IConverter;
+import com.exactpro.sf.comparison.conversion.impl.BigDecimalConverter;
+import com.exactpro.sf.comparison.conversion.impl.BooleanConverter;
+import com.exactpro.sf.comparison.conversion.impl.ByteConverter;
+import com.exactpro.sf.comparison.conversion.impl.CharacterConverter;
+import com.exactpro.sf.comparison.conversion.impl.DoubleConverter;
+import com.exactpro.sf.comparison.conversion.impl.FloatConverter;
+import com.exactpro.sf.comparison.conversion.impl.IntegerConverter;
+import com.exactpro.sf.comparison.conversion.impl.LocalDateConverter;
+import com.exactpro.sf.comparison.conversion.impl.LocalDateTimeConverter;
+import com.exactpro.sf.comparison.conversion.impl.LocalTimeConverter;
+import com.exactpro.sf.comparison.conversion.impl.LongConverter;
+import com.exactpro.sf.comparison.conversion.impl.ShortConverter;
+import com.exactpro.sf.comparison.conversion.impl.StringConverter;
 import com.exactpro.sf.configuration.suri.SailfishURI;
 import com.exactpro.sf.externalapi.IMessageFactoryProxy;
 import com.exactpro.th2.common.grpc.FilterOperation;
@@ -183,8 +181,8 @@ public class ProtoToIMessageConverter {
         if (value.hasMessageFilter()) {
             return fromProtoFilter(value.getMessageFilter(), fieldname);
         }
-        if (value.hasComplexFilter()) {
-            return new ListContainFilter(value.getComplexFilter().getComplexValuesList());
+        if (value.getOperation() == FilterOperation.IN || value.getOperation() == FilterOperation.NOT_IN) {
+            return new ListContainFilter(value.getOperation(), value.getSimpleList().getSimpleValuesList());
         }
         return toSimpleFilter(value.getOperation(), value.getSimpleFilter());
     }
@@ -201,14 +199,16 @@ public class ProtoToIMessageConverter {
             case NOT_EMPTY:
                 return StaticUtil.notNullFilter(0, null);
             case LIKE:
-                return new RegExFilter(simpleFilter);
+            case NOT_LIKE:
+                return new RegExFilter(operation, simpleFilter);
             case LESS:
+            case NOT_LESS:
             case MORE:
-                try {
-                    return new MathFilter(operation, simpleFilter);
-                } catch (ParseException ex) {
-                    throw new EPSCommonException("Failed to create math filter with incorrect params " + operation, ex);
-                }
+            case NOT_MORE:
+                return new MathFilter(operation, simpleFilter);
+            case WILDCARD:
+            case NOT_WILDCARD:
+                return new WildcardFilter(operation, simpleFilter);
             default:
                 throw new IllegalArgumentException("Unsupported operation " + operation);
         }

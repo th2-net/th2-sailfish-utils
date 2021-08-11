@@ -15,41 +15,43 @@
  */
 package com.exactpro.th2.sailfish.utils;
 
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.exactpro.sf.aml.scriptutil.ExpressionResult;
 import com.exactpro.sf.aml.scriptutil.StaticUtil.IFilter;
+import com.exactpro.th2.common.grpc.FilterOperation;
 
 public class RegExFilter implements IFilter {
 
     private final Pattern pattern;
+    private final FilterOperation operation;
 
-    public RegExFilter(String value) {
+    public RegExFilter(FilterOperation operation, String value) {
         pattern = Pattern.compile(value);
+        Objects.requireNonNull(operation);
+        this.operation = operation;
     }
 
     @Override
     public ExpressionResult validate(Object value) throws RuntimeException {
+        Objects.requireNonNull(value);
         if (!(value instanceof String)) {
             throw new IllegalArgumentException("Incorrect value type " + value.getClass().getSimpleName());
         }
-        Matcher matcher = pattern.matcher((String)value);
-        StringBuilder foundValue = new StringBuilder();
-        while (matcher.find()) {
-            foundValue.append((String)value, matcher.start(), matcher.end());
+        Matcher matcher = pattern.matcher((CharSequence)value);
+        boolean isMatched = matcher.matches();
+        if (operation == FilterOperation.LIKE) {
+            return ExpressionResult.create(isMatched);
         }
-        boolean result = false;
-        if (foundValue.length() != 0) {
-            result = true;
-        }
-        return new ExpressionResult(result, foundValue.toString());
+        return ExpressionResult.create(!isMatched);
 
     }
 
     @Override
     public String getCondition() {
-        return "LIKE_" + pattern.pattern();
+        return operation.name() + '_' + pattern.pattern();
     }
 
     @Override

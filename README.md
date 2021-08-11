@@ -11,7 +11,7 @@ This library contains classes to convert messages from th2 to Sailfish format an
 + `Parameters` to configure the `ProtoToIMessageConverter`
 
 ### 3.5.1
-+ Added filters for 'IN', 'LIKE', 'MORE', 'LESS' FilterOperations
++ Added functional for 'IN', 'LIKE', 'MORE', 'LESS', 'WILDCARD' FilterOperation and their negative versions
 
 ### 3.5.0
 

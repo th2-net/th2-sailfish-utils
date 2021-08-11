@@ -15,22 +15,23 @@
  */
 package com.exactpro.th2.sailfish.utils;
 
-import java.util.List;
 import java.util.Objects;
+
+import org.apache.commons.io.FilenameUtils;
 
 import com.exactpro.sf.aml.scriptutil.ExpressionResult;
 import com.exactpro.sf.aml.scriptutil.StaticUtil.IFilter;
 import com.exactpro.th2.common.grpc.FilterOperation;
 
-public class ListContainFilter implements IFilter {
+public class WildcardFilter implements IFilter {
 
-    private final List<String> values;
+    private final String value;
     private final FilterOperation operation;
 
-    public ListContainFilter(FilterOperation operation, List<String> value) {
+    public WildcardFilter(FilterOperation operation, String value) {
         Objects.requireNonNull(value);
         Objects.requireNonNull(operation);
-        values = value;
+        this.value = value;
         this.operation = operation;
     }
 
@@ -40,17 +41,17 @@ public class ListContainFilter implements IFilter {
         if (!(value instanceof String)) {
             throw new IllegalArgumentException("Incorrect value type " + value.getClass().getSimpleName());
         }
-        boolean isContain = values.contains(value);
-        if (operation == FilterOperation.IN) {
-           return ExpressionResult.create(isContain);
+        boolean isMatched = FilenameUtils.wildcardMatch((String)value, this.value);
+        if (operation == FilterOperation.WILDCARD) {
+           return ExpressionResult.create(isMatched);
         }
-        return ExpressionResult.create(!isContain);
+        return ExpressionResult.create(!isMatched);
 
     }
 
     @Override
     public String getCondition() {
-        return operation.name() + '_' + values;
+        return operation.name() + '_' + value;
     }
 
     @Override
@@ -60,7 +61,7 @@ public class ListContainFilter implements IFilter {
 
     @Override
     public Object getValue() {
-        return values;
+        return value;
     }
 
     @Override
