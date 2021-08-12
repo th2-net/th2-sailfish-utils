@@ -181,7 +181,8 @@ public class ProtoToIMessageConverter {
         if (value.hasMessageFilter()) {
             return fromProtoFilter(value.getMessageFilter(), fieldname);
         }
-        if (value.getOperation() == FilterOperation.IN || value.getOperation() == FilterOperation.NOT_IN) {
+        if (value.hasSimpleList() &&
+                (value.getOperation() == FilterOperation.IN || value.getOperation() == FilterOperation.NOT_IN)) {
             return new ListContainFilter(value.getOperation(), value.getSimpleList().getSimpleValuesList());
         }
         return toSimpleFilter(value.getOperation(), value.getSimpleFilter());

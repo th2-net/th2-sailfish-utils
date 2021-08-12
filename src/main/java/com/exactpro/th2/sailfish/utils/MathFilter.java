@@ -16,9 +16,12 @@
 package com.exactpro.th2.sailfish.utils;
 
 import java.math.BigDecimal;
-import java.text.NumberFormat;
-import java.text.ParseException;
-import java.util.Locale;
+import java.text.DecimalFormatSymbols;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeParseException;
+import java.time.temporal.Temporal;
 import java.util.Objects;
 
 import com.exactpro.sf.aml.scriptutil.ExpressionResult;
@@ -27,20 +30,30 @@ import com.exactpro.th2.common.grpc.FilterOperation;
 
 public class MathFilter implements IFilter {
 
-    private final Number value;
+    private final Object value;
     private final String stringFormatOperation;
     private final FilterOperation operation;
+    private boolean isNumber;
 
     public MathFilter(FilterOperation operation, String value) {
         Objects.requireNonNull(value);
-        if (value.contains(",")) {
-            value = value.replace(',', '.');
-        }
+        Exception potentialException = null;
+        Object tmpValue = null;
         try {
-            this.value = NumberFormat.getInstance(Locale.getDefault()).parse(value);
-        } catch (ParseException ex) {
-            throw new IllegalArgumentException("Failed to parse value to Number. " + value.getClass().getSimpleName(), ex);
+            tmpValue = convertValue(value);
+            isNumber = true;
+        } catch (NumberFormatException e) {
+            potentialException = new IllegalArgumentException("Failed to parse value to Number. " + value, e);
         }
+        if (!isNumber && (value.contains(":") || value.contains("-"))) {
+            try {
+                tmpValue = convertDateValue(value);
+            } catch (DateTimeParseException ex) {
+                ex.addSuppressed(potentialException);
+                throw new IllegalArgumentException("Failed to parse value to Date. " + value, ex);
+            }
+        }
+        this.value = tmpValue;
         switch (operation) {
         case MORE:
             this.stringFormatOperation = ">";
@@ -67,31 +80,23 @@ public class MathFilter implements IFilter {
         if (!(value instanceof String)) {
             throw new IllegalArgumentException("Incorrect value type " + value.getClass().getSimpleName());
         }
-        if (((String)value).contains(",")) {
-            value = ((String)value).replace(',', '.');
+        Comparable tmpValue;
+        if (!isNumber) {
+            try {
+                tmpValue = (Comparable)convertDateValue((String)value);
+            } catch (DateTimeParseException ex) {
+                throw new IllegalArgumentException("Failed to parse value to Date. " + value, ex);
+            }
+        } else {
+            try {
+                tmpValue = convertValue((String)value);
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Failed to parse value to Number. " + value, e);
+            }
         }
-        try {
-            value = NumberFormat.getInstance().parse((String)value);
-        } catch (ParseException e) {
-            throw new IllegalArgumentException("Failed to parse value to Number. " + value.getClass().getSimpleName(), e);
-        }
-        boolean result = false;
-        int compareResult = compareValues((Number)value, this.value);
-        switch (operation) {
-            case MORE:
-                result = compareResult > 0;
-                break;
-            case LESS:
-                result = compareResult < 0;
-                break;
-            case NOT_MORE:
-                result = compareResult <= 0;
-                break;
-            case NOT_LESS:
-                result = compareResult >= 0;
-                break;
-        }
-        return ExpressionResult.create(result);
+
+        return ExpressionResult.create(compareValues(tmpValue, (Comparable)this.value));
+
     }
 
     @Override
@@ -114,10 +119,43 @@ public class MathFilter implements IFilter {
         return true;
     }
 
-    private int compareValues(Number first, Number second) {
-        if (first instanceof Double || first instanceof Float || second instanceof Double || second instanceof Float) {
-            return new BigDecimal(first.toString()).compareTo(new BigDecimal(second.toString()));
+    private static Comparable convertValue(String value) {
+        if (value.contains(String.valueOf(DecimalFormatSymbols.getInstance().getDecimalSeparator()))) {
+            return Double.parseDouble(value);
         }
-        return ((Long)first).compareTo(second.longValue());
+        return Long.parseLong(value);
+    }
+
+    private static Temporal convertDateValue(String value) {
+        if (value.contains(":")) {
+            if (value.contains("-")) {
+                return LocalDateTime.parse(value);
+            } else {
+                return LocalTime.parse(value);
+            }
+        } else {
+            return LocalDate.parse(value);
+        }
+    }
+
+    private boolean compareValues(Comparable first, Comparable second) {
+        int result;
+        if (first instanceof Double || first instanceof Float || second instanceof Double || second instanceof Float) {
+            result = new BigDecimal(first.toString()).compareTo(new BigDecimal(second.toString()));
+        } else {
+            result = first.compareTo(second);
+        }
+        switch (operation) {
+        case MORE:
+            return result > 0;
+        case LESS:
+            return result < 0;
+        case NOT_MORE:
+            return result <= 0;
+        case NOT_LESS:
+            return result >= 0;
+        default:
+            throw new IllegalArgumentException("Incorrect math operation " + operation);
+        }
     }
 }

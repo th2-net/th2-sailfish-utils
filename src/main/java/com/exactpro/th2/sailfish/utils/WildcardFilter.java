@@ -29,10 +29,8 @@ public class WildcardFilter implements IFilter {
     private final FilterOperation operation;
 
     public WildcardFilter(FilterOperation operation, String value) {
-        Objects.requireNonNull(value);
-        Objects.requireNonNull(operation);
-        this.value = value;
-        this.operation = operation;
+        this.value = Objects.requireNonNull(value);
+        this.operation = Objects.requireNonNull(operation);
     }
 
     @Override

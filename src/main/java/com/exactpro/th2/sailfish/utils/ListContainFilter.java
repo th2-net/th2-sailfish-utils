@@ -28,10 +28,8 @@ public class ListContainFilter implements IFilter {
     private final FilterOperation operation;
 
     public ListContainFilter(FilterOperation operation, List<String> value) {
-        Objects.requireNonNull(value);
-        Objects.requireNonNull(operation);
-        values = value;
-        this.operation = operation;
+        values = Objects.requireNonNull(value);
+        this.operation = Objects.requireNonNull(operation);
     }
 
     @Override

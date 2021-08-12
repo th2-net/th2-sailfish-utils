@@ -30,8 +30,7 @@ public class RegExFilter implements IFilter {
 
     public RegExFilter(FilterOperation operation, String value) {
         pattern = Pattern.compile(value);
-        Objects.requireNonNull(operation);
-        this.operation = operation;
+        this.operation = Objects.requireNonNull(operation);
     }
 
     @Override
