@@ -43,14 +43,14 @@ public class MathFilter implements IFilter {
             tmpValue = convertValue(value);
             isNumber = true;
         } catch (NumberFormatException e) {
-            potentialException = new IllegalArgumentException("Failed to parse value to Number. " + value, e);
+            potentialException = new IllegalArgumentException("Failed to parse value to Number. Value = " + value, e);
         }
-        if (!isNumber && (value.contains(":") || value.contains("-"))) {
+        if (!isNumber) {
             try {
                 tmpValue = convertDateValue(value);
             } catch (DateTimeParseException ex) {
                 ex.addSuppressed(potentialException);
-                throw new IllegalArgumentException("Failed to parse value to Date. " + value, ex);
+                throw new IllegalArgumentException("Failed to parse value to Date. Value = " + value, ex);
             }
         }
         this.value = tmpValue;
@@ -85,13 +85,13 @@ public class MathFilter implements IFilter {
             try {
                 tmpValue = (Comparable)convertDateValue((String)value);
             } catch (DateTimeParseException ex) {
-                throw new IllegalArgumentException("Failed to parse value to Date. " + value, ex);
+                throw new IllegalArgumentException("Failed to parse value to Date. Value = " + value, ex);
             }
         } else {
             try {
                 tmpValue = convertValue((String)value);
             } catch (NumberFormatException e) {
-                throw new IllegalArgumentException("Failed to parse value to Number. " + value, e);
+                throw new IllegalArgumentException("Failed to parse value to Number. Value = " + value, e);
             }
         }
 
