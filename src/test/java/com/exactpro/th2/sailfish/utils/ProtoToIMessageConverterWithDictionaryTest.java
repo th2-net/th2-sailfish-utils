@@ -29,8 +29,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Map;
-import java.util.Objects;
 
+import com.exactpro.th2.sailfish.utils.factory.DefaultMessageFactoryProxy;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 

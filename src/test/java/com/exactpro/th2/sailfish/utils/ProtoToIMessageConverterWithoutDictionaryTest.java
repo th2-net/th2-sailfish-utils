@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.List;
 import java.util.Set;
 
+import com.exactpro.th2.sailfish.utils.factory.DefaultMessageFactoryProxy;
 import org.junit.jupiter.api.Test;
 
 import com.exactpro.sf.aml.scriptutil.StaticUtil.IFilter;
