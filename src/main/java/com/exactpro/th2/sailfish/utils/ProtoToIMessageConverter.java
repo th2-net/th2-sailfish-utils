@@ -76,16 +76,46 @@ import com.google.protobuf.InvalidProtocolBufferException;
 
 public class ProtoToIMessageConverter {
     private static final Logger logger = LoggerFactory.getLogger(ProtoToIMessageConverter.class.getName());
+    private static final Parameters DEFAULT_PARAMETERS = new Parameters();
     private final IMessageFactoryProxy messageFactory;
     private final IDictionaryStructure dictionary;
     private final SailfishURI dictionaryURI;
+    private final Parameters parameters;
+
+    public static class Parameters {
+        private boolean allowUnknownEnumValues;
+
+        private Parameters() {
+        }
+
+        public boolean isAllowUnknownEnumValues() {
+            return allowUnknownEnumValues;
+        }
+
+        public Parameters setAllowUnknownEnumValues(boolean allowUnknownEnumValues) {
+            this.allowUnknownEnumValues = allowUnknownEnumValues;
+            return this;
+        }
+    }
 
     public ProtoToIMessageConverter(@NotNull IMessageFactoryProxy messageFactory,
                                     @Nullable IDictionaryStructure dictionaryStructure,
                                     SailfishURI dictionaryURI) {
+        this(messageFactory, dictionaryStructure, dictionaryURI, DEFAULT_PARAMETERS);
+    }
+
+    public ProtoToIMessageConverter(@NotNull IMessageFactoryProxy messageFactory,
+                                    @Nullable IDictionaryStructure dictionaryStructure,
+                                    SailfishURI dictionaryURI,
+                                    Parameters parameters) {
         this.messageFactory = requireNonNull(messageFactory, "'Message factory' parameter");
         this.dictionary = dictionaryStructure;
         this.dictionaryURI = dictionaryURI;
+        this.parameters = requireNonNull(parameters, "'parameters' cannot be null");
+    }
+
+    public static Parameters createParameters() {
+        return new Parameters();
     }
 
     public MessageWrapper fromProtoMessage(byte[] messageData, boolean useDictionary) throws InvalidProtocolBufferException {
@@ -312,6 +342,9 @@ public class ProtoToIMessageConverter {
             if (enumEntry.getKey().equals(value) || enumValue.equals(value)) {
                 return enumValue;
             }
+        }
+        if (parameters.isAllowUnknownEnumValues()) {
+            return value;
         }
         throw new UnknownEnumException(fieldStructure.getName(), value, fieldStructure.getNamespace());
     }
