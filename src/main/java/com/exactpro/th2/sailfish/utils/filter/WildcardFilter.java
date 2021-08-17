@@ -13,22 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.exactpro.th2.sailfish.utils;
+package com.exactpro.th2.sailfish.utils.filter;
 
-import java.util.List;
 import java.util.Objects;
+
+import org.apache.commons.io.FilenameUtils;
 
 import com.exactpro.sf.aml.scriptutil.ExpressionResult;
 import com.exactpro.th2.common.grpc.FilterOperation;
 
-public class ListContainFilter implements IOperationFilter {
+public class WildcardFilter implements IOperationFilter {
 
-    private final List<String> values;
+    private final String value;
     private final FilterOperation operation;
 
-    public ListContainFilter(FilterOperation operation, List<String> value) {
-        values = Objects.requireNonNull(value);
-        this.operation = Objects.requireNonNull(operation);
+    public WildcardFilter(FilterOperation operation, String value) {
+        this.value = Objects.requireNonNull(value);
+        switch (operation) {
+        case WILDCARD:
+        case NOT_WILDCARD:
+            this.operation = Objects.requireNonNull(operation);
+            break;
+        default:
+            throw new IllegalArgumentException("Incorrect operation for {WILDCARD/NOT_WILDCARD} filter " + operation);
+        }
     }
 
     @Override
@@ -37,17 +45,17 @@ public class ListContainFilter implements IOperationFilter {
         if (!(value instanceof String)) {
             throw new IllegalArgumentException("Incorrect value type " + value.getClass().getSimpleName());
         }
-        boolean isContain = values.contains(value);
-        if (operation == FilterOperation.IN) {
-           return ExpressionResult.create(isContain);
+        boolean isMatched = FilenameUtils.wildcardMatch((String)value, this.value);
+        if (operation == FilterOperation.WILDCARD) {
+           return ExpressionResult.create(isMatched);
         }
-        return ExpressionResult.create(!isContain);
+        return ExpressionResult.create(!isMatched);
 
     }
 
     @Override
     public String getCondition() {
-        return operation.name() + ' ' + values;
+        return operation.name() + ' ' + value;
     }
 
     @Override
@@ -57,7 +65,7 @@ public class ListContainFilter implements IOperationFilter {
 
     @Override
     public Object getValue() {
-        return values;
+        return value;
     }
 
     @Override

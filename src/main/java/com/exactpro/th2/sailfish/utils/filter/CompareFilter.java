@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.exactpro.th2.sailfish.utils;
+package com.exactpro.th2.sailfish.utils.filter;
 
 import java.math.BigDecimal;
 import java.text.DecimalFormatSymbols;
@@ -21,7 +21,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
-import java.time.temporal.Temporal;
 import java.util.Objects;
 
 import com.exactpro.sf.aml.scriptutil.ExpressionResult;
@@ -29,7 +28,7 @@ import com.exactpro.th2.common.grpc.FilterOperation;
 
 public class CompareFilter implements IOperationFilter {
 
-    private final Object value;
+    private final Comparable<?> value;
     private final String stringFormatOperation;
     private final FilterOperation operation;
     private boolean isNumber;
@@ -37,7 +36,7 @@ public class CompareFilter implements IOperationFilter {
     public CompareFilter(FilterOperation operation, String value) {
         Objects.requireNonNull(value);
         Exception potentialException = null;
-        Object tmpValue = null;
+        Comparable<?> tmpValue = null;
         try {
             tmpValue = convertValue(value);
             isNumber = true;
@@ -67,7 +66,7 @@ public class CompareFilter implements IOperationFilter {
             this.stringFormatOperation = ">=";
             break;
         default:
-            throw new IllegalArgumentException("Incorrect math operation " + operation);
+            throw new IllegalArgumentException("Incorrect compare operation " + operation);
         }
         this.operation = Objects.requireNonNull(operation);
     }
@@ -124,7 +123,7 @@ public class CompareFilter implements IOperationFilter {
         return Long.parseLong(value);
     }
 
-    private static Temporal convertDateValue(String value) {
+    private static Comparable<?> convertDateValue(String value) {
         if (value.contains(":")) {
             if (value.contains("-")) {
                 return LocalDateTime.parse(value);
@@ -135,43 +134,7 @@ public class CompareFilter implements IOperationFilter {
     }
 
     private boolean compareValues(Comparable<?> first, Comparable<?> second) {
-        int result;
-        if (first.getClass().equals(second.getClass())) {
-            if (first instanceof LocalDate) {
-                result = ((LocalDate)first).compareTo((LocalDate)second);
-            } else {
-                if (first instanceof LocalDateTime) {
-                    result = ((LocalDateTime)first).compareTo((LocalDateTime)second);
-                } else {
-                    if (first instanceof LocalTime) {
-                        result = ((LocalTime)first).compareTo((LocalTime)second);
-                    } else {
-                        if (first instanceof BigDecimal) {
-                            result = ((BigDecimal)first).compareTo((BigDecimal)second);
-                        } else {
-                            result = ((Long)first).compareTo((Long)second);
-                        }
-                    }
-                }
-            }
-        } else {
-            if (first instanceof LocalDate || first instanceof LocalDateTime || first instanceof LocalTime) {
-                throw new IllegalArgumentException(String.format("Failed to compare Temporal values {%s}, {%s}", first, second));
-            }
-            if (second instanceof LocalDate || second instanceof LocalDateTime || second instanceof LocalTime) {
-                throw new IllegalArgumentException(String.format("Failed to compare Temporal values {%s}, {%s}", first, second));
-            }
-            if (first instanceof BigDecimal) {
-                result = ((BigDecimal)first).compareTo(new BigDecimal(second.toString()));
-            } else {
-                if (second instanceof BigDecimal) {
-                    result = new BigDecimal(first.toString()).compareTo((BigDecimal)second);
-                } else {
-                    result = ((Long)first).compareTo((Long)second);
-                }
-            }
-        }
-
+        int result = compareValueWithoutOperation(first, second);
         switch (operation) {
         case MORE:
             return result > 0;
@@ -184,6 +147,37 @@ public class CompareFilter implements IOperationFilter {
         default:
             throw new IllegalArgumentException("Incorrect math operation " + operation);
         }
+    }
+
+    private int compareValueWithoutOperation(Comparable<?> first, Comparable<?> second) {
+        if (first.getClass().equals(second.getClass())) {
+            if (first instanceof LocalDate) {
+                return  ((LocalDate)first).compareTo((LocalDate)second);
+            }
+            if (first instanceof LocalDateTime) {
+                return ((LocalDateTime)first).compareTo((LocalDateTime)second);
+            }
+            if (first instanceof LocalTime) {
+                return ((LocalTime)first).compareTo((LocalTime)second);
+            }
+            if (first instanceof BigDecimal) {
+                return ((BigDecimal)first).compareTo((BigDecimal)second);
+            }
+            return ((Long)first).compareTo((Long)second);
+        }
+        if (first instanceof LocalDate || first instanceof LocalDateTime || first instanceof LocalTime) {
+            throw new IllegalArgumentException(String.format("Failed to compare Temporal values {%s}, {%s}", first, second));
+        }
+        if (second instanceof LocalDate || second instanceof LocalDateTime || second instanceof LocalTime) {
+            throw new IllegalArgumentException(String.format("Failed to compare Temporal values {%s}, {%s}", first, second));
+        }
+        if (first instanceof BigDecimal) {
+            return ((BigDecimal)first).compareTo(new BigDecimal(second.toString()));
+        }
+        if (second instanceof BigDecimal) {
+            return new BigDecimal(first.toString()).compareTo((BigDecimal)second);
+        }
+        return ((Long)first).compareTo((Long)second);
     }
 
     @Override

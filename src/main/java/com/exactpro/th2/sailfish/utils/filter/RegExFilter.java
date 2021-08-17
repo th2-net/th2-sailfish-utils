@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.exactpro.th2.sailfish.utils;
+package com.exactpro.th2.sailfish.utils.filter;
 
 import java.util.Objects;
 import java.util.regex.Matcher;
@@ -29,7 +29,14 @@ public class RegExFilter implements IOperationFilter {
 
     public RegExFilter(FilterOperation operation, String value) {
         pattern = Pattern.compile(value);
-        this.operation = Objects.requireNonNull(operation);
+        switch (operation) {
+        case LIKE:
+        case NOT_LIKE:
+            this.operation = Objects.requireNonNull(operation);
+            break;
+        default:
+            throw new IllegalArgumentException("Incorrect operation for {LIKE/NOT_LIKE} filter " + operation);
+        }
     }
 
     @Override

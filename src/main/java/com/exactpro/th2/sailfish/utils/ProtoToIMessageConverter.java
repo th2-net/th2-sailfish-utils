@@ -72,6 +72,10 @@ import com.exactpro.th2.common.grpc.MetadataFilter.SimpleFilter;
 import com.exactpro.th2.common.grpc.Value;
 import com.exactpro.th2.common.grpc.Value.KindCase;
 import com.exactpro.th2.common.grpc.ValueFilter;
+import com.exactpro.th2.sailfish.utils.filter.CompareFilter;
+import com.exactpro.th2.sailfish.utils.filter.ListContainFilter;
+import com.exactpro.th2.sailfish.utils.filter.RegExFilter;
+import com.exactpro.th2.sailfish.utils.filter.WildcardFilter;
 import com.google.protobuf.InvalidProtocolBufferException;
 
 public class ProtoToIMessageConverter {
