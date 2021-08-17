@@ -20,10 +20,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.exactpro.sf.aml.scriptutil.ExpressionResult;
-import com.exactpro.sf.aml.scriptutil.StaticUtil.IFilter;
 import com.exactpro.th2.common.grpc.FilterOperation;
 
-public class RegExFilter implements IFilter {
+public class RegExFilter implements IOperationFilter {
 
     private final Pattern pattern;
     private final FilterOperation operation;
@@ -50,12 +49,12 @@ public class RegExFilter implements IFilter {
 
     @Override
     public String getCondition() {
-        return operation.name() + '_' + pattern.pattern();
+        return operation.name() + ' ' + pattern.pattern();
     }
 
     @Override
     public String getCondition(Object value) {
-        return getCondition();
+        return value + " " + getCondition();
     }
 
     @Override
@@ -66,5 +65,10 @@ public class RegExFilter implements IFilter {
     @Override
     public boolean hasValue() {
         return true;
+    }
+
+    @Override
+    public FilterOperation getOperation() {
+        return operation;
     }
 }

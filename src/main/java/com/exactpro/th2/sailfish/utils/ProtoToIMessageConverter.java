@@ -181,9 +181,11 @@ public class ProtoToIMessageConverter {
         if (value.hasMessageFilter()) {
             return fromProtoFilter(value.getMessageFilter(), fieldname);
         }
-        if (value.hasSimpleList() &&
-                (value.getOperation() == FilterOperation.IN || value.getOperation() == FilterOperation.NOT_IN)) {
-            return new ListContainFilter(value.getOperation(), value.getSimpleList().getSimpleValuesList());
+        if (value.hasSimpleList()) {
+            if (value.getOperation() == FilterOperation.IN || value.getOperation() == FilterOperation.NOT_IN) {
+                return new ListContainFilter(value.getOperation(), value.getSimpleList().getSimpleValuesList());
+            }
+            throw new IllegalArgumentException(String.format("The operation doesn't match the value {%s}, {%s}", value.getOperation(), value.getSimpleList()));
         }
         return toSimpleFilter(value.getOperation(), value.getSimpleFilter());
     }
@@ -206,7 +208,7 @@ public class ProtoToIMessageConverter {
             case NOT_LESS:
             case MORE:
             case NOT_MORE:
-                return new MathFilter(operation, simpleFilter);
+                return new CompareFilter(operation, simpleFilter);
             case WILDCARD:
             case NOT_WILDCARD:
                 return new WildcardFilter(operation, simpleFilter);

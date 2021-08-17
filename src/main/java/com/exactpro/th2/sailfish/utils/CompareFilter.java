@@ -25,17 +25,16 @@ import java.time.temporal.Temporal;
 import java.util.Objects;
 
 import com.exactpro.sf.aml.scriptutil.ExpressionResult;
-import com.exactpro.sf.aml.scriptutil.StaticUtil.IFilter;
 import com.exactpro.th2.common.grpc.FilterOperation;
 
-public class MathFilter implements IFilter {
+public class CompareFilter implements IOperationFilter {
 
     private final Object value;
     private final String stringFormatOperation;
     private final FilterOperation operation;
     private boolean isNumber;
 
-    public MathFilter(FilterOperation operation, String value) {
+    public CompareFilter(FilterOperation operation, String value) {
         Objects.requireNonNull(value);
         Exception potentialException = null;
         Object tmpValue = null;
@@ -70,8 +69,7 @@ public class MathFilter implements IFilter {
         default:
             throw new IllegalArgumentException("Incorrect math operation " + operation);
         }
-        Objects.requireNonNull(operation);
-        this.operation = operation;
+        this.operation = Objects.requireNonNull(operation);
     }
 
     @Override
@@ -80,33 +78,33 @@ public class MathFilter implements IFilter {
         if (!(value instanceof String)) {
             throw new IllegalArgumentException("Incorrect value type " + value.getClass().getSimpleName());
         }
-        Comparable tmpValue;
-        if (!isNumber) {
-            try {
-                tmpValue = (Comparable)convertDateValue((String)value);
-            } catch (DateTimeParseException ex) {
-                throw new IllegalArgumentException("Failed to parse value to Date. Value = " + value, ex);
-            }
-        } else {
+        Comparable<?> tmpValue;
+        if (isNumber) {
             try {
                 tmpValue = convertValue((String)value);
             } catch (NumberFormatException e) {
                 throw new IllegalArgumentException("Failed to parse value to Number. Value = " + value, e);
             }
+        } else {
+            try {
+                tmpValue = (Comparable<?>)convertDateValue((String)value);
+            } catch (DateTimeParseException ex) {
+                throw new IllegalArgumentException("Failed to parse value to Date. Value = " + value, ex);
+            }
         }
 
-        return ExpressionResult.create(compareValues(tmpValue, (Comparable)this.value));
+        return ExpressionResult.create(compareValues(tmpValue, (Comparable<?>)this.value));
 
     }
 
     @Override
     public String getCondition() {
-        return stringFormatOperation;
+        return stringFormatOperation + getValue();
     }
 
     @Override
     public String getCondition(Object value) {
-        return getCondition();
+        return value + getCondition() + getValue();
     }
 
     @Override
@@ -119,9 +117,9 @@ public class MathFilter implements IFilter {
         return true;
     }
 
-    private static Comparable convertValue(String value) {
+    private static Comparable<?> convertValue(String value) {
         if (value.contains(String.valueOf(DecimalFormatSymbols.getInstance().getDecimalSeparator()))) {
-            return Double.parseDouble(value);
+            return new BigDecimal(value);
         }
         return Long.parseLong(value);
     }
@@ -130,21 +128,50 @@ public class MathFilter implements IFilter {
         if (value.contains(":")) {
             if (value.contains("-")) {
                 return LocalDateTime.parse(value);
-            } else {
-                return LocalTime.parse(value);
             }
-        } else {
-            return LocalDate.parse(value);
+            return LocalTime.parse(value);
         }
+        return LocalDate.parse(value);
     }
 
-    private boolean compareValues(Comparable first, Comparable second) {
+    private boolean compareValues(Comparable<?> first, Comparable<?> second) {
         int result;
-        if (first instanceof Double || first instanceof Float || second instanceof Double || second instanceof Float) {
-            result = new BigDecimal(first.toString()).compareTo(new BigDecimal(second.toString()));
+        if (first.getClass().equals(second.getClass())) {
+            if (first instanceof LocalDate) {
+                result = ((LocalDate)first).compareTo((LocalDate)second);
+            } else {
+                if (first instanceof LocalDateTime) {
+                    result = ((LocalDateTime)first).compareTo((LocalDateTime)second);
+                } else {
+                    if (first instanceof LocalTime) {
+                        result = ((LocalTime)first).compareTo((LocalTime)second);
+                    } else {
+                        if (first instanceof BigDecimal) {
+                            result = ((BigDecimal)first).compareTo((BigDecimal)second);
+                        } else {
+                            result = ((Long)first).compareTo((Long)second);
+                        }
+                    }
+                }
+            }
         } else {
-            result = first.compareTo(second);
+            if (first instanceof LocalDate || first instanceof LocalDateTime || first instanceof LocalTime) {
+                throw new IllegalArgumentException(String.format("Failed to compare Temporal values {%s}, {%s}", first, second));
+            }
+            if (second instanceof LocalDate || second instanceof LocalDateTime || second instanceof LocalTime) {
+                throw new IllegalArgumentException(String.format("Failed to compare Temporal values {%s}, {%s}", first, second));
+            }
+            if (first instanceof BigDecimal) {
+                result = ((BigDecimal)first).compareTo(new BigDecimal(second.toString()));
+            } else {
+                if (second instanceof BigDecimal) {
+                    result = new BigDecimal(first.toString()).compareTo((BigDecimal)second);
+                } else {
+                    result = ((Long)first).compareTo((Long)second);
+                }
+            }
         }
+
         switch (operation) {
         case MORE:
             return result > 0;
@@ -157,5 +184,10 @@ public class MathFilter implements IFilter {
         default:
             throw new IllegalArgumentException("Incorrect math operation " + operation);
         }
+    }
+
+    @Override
+    public FilterOperation getOperation() {
+        return operation;
     }
 }

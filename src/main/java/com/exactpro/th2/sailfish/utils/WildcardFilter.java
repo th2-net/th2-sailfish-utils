@@ -20,10 +20,9 @@ import java.util.Objects;
 import org.apache.commons.io.FilenameUtils;
 
 import com.exactpro.sf.aml.scriptutil.ExpressionResult;
-import com.exactpro.sf.aml.scriptutil.StaticUtil.IFilter;
 import com.exactpro.th2.common.grpc.FilterOperation;
 
-public class WildcardFilter implements IFilter {
+public class WildcardFilter implements IOperationFilter {
 
     private final String value;
     private final FilterOperation operation;
@@ -49,12 +48,12 @@ public class WildcardFilter implements IFilter {
 
     @Override
     public String getCondition() {
-        return operation.name() + '_' + value;
+        return operation.name() + ' ' + value;
     }
 
     @Override
     public String getCondition(Object value) {
-        return getCondition();
+        return value + " " + getCondition();
     }
 
     @Override
@@ -65,5 +64,10 @@ public class WildcardFilter implements IFilter {
     @Override
     public boolean hasValue() {
         return true;
+    }
+
+    @Override
+    public FilterOperation getOperation() {
+        return operation;
     }
 }

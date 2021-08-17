@@ -19,10 +19,9 @@ import java.util.List;
 import java.util.Objects;
 
 import com.exactpro.sf.aml.scriptutil.ExpressionResult;
-import com.exactpro.sf.aml.scriptutil.StaticUtil.IFilter;
 import com.exactpro.th2.common.grpc.FilterOperation;
 
-public class ListContainFilter implements IFilter {
+public class ListContainFilter implements IOperationFilter {
 
     private final List<String> values;
     private final FilterOperation operation;
@@ -48,12 +47,12 @@ public class ListContainFilter implements IFilter {
 
     @Override
     public String getCondition() {
-        return operation.name() + '_' + values;
+        return operation.name() + ' ' + values;
     }
 
     @Override
     public String getCondition(Object value) {
-        return getCondition();
+        return value + " " + getCondition();
     }
 
     @Override
@@ -64,5 +63,10 @@ public class ListContainFilter implements IFilter {
     @Override
     public boolean hasValue() {
         return true;
+    }
+
+    @Override
+    public FilterOperation getOperation() {
+        return operation;
     }
 }
