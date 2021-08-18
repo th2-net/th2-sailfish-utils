@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import com.exactpro.sf.common.messages.IMessage;
 import com.exactpro.sf.comparison.ComparatorSettings;
@@ -155,16 +156,9 @@ public class ImplementationIFilterTest extends AbstractConverterTest {
         Assertions.assertEquals(errorMessage, result.getResult("errorFilter").getExceptionMessage());
     }
 
-    private static List<Arguments> filterException() {
-        return Arrays.asList(
-                Arguments.of("10,1", "102"),
-                Arguments.of("2007-12-03T10-15:30", "2007-12-03T10:15:30")
-        );
-    }
-
     @ParameterizedTest
-    @MethodSource("filterException")
-    void testFilterWithException(String first, String second) {
+    @ValueSource(strings = {"10,1", "2007-12-03T10-15:30"})
+    void testFilterWithException(String first) {
         RootMessageFilter filter = RootMessageFilter.newBuilder()
                 .setMessageType(MESSAGE_TYPE)
                 .setMessageFilter(MessageFilter.newBuilder()
@@ -175,11 +169,7 @@ public class ImplementationIFilterTest extends AbstractConverterTest {
                         .build())
                 .build();
 
-        Message actual = createMessageBuilder(MESSAGE_TYPE)
-                .putFields("filterException", getSimpleValue(second))
-                .build();
-
-        Assertions.assertThrows(IllegalArgumentException.class, () -> getResult(actual, filter));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> converter.fromProtoFilter(filter.getMessageFilter(), filter.getMessageType()));
     }
 
     private ComparisonResult getResult(Message actual, RootMessageFilter filter) {

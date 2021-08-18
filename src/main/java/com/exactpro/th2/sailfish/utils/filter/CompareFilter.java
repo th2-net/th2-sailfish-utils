@@ -31,18 +31,21 @@ public class CompareFilter implements IOperationFilter {
     private final Comparable<?> value;
     private final String stringFormatOperation;
     private final FilterOperation operation;
-    private boolean isNumber;
+    private final boolean isNumber;
 
     public CompareFilter(FilterOperation operation, String value) {
+        boolean isTmpNumber;
         Objects.requireNonNull(value);
         Exception potentialException = null;
         Comparable<?> tmpValue = null;
         try {
             tmpValue = convertValue(value);
-            isNumber = true;
+            isTmpNumber = true;
         } catch (NumberFormatException e) {
             potentialException = new IllegalArgumentException("Failed to parse value to Number. Value = " + value, e);
+            isTmpNumber = false;
         }
+        isNumber = isTmpNumber;
         if (!isNumber) {
             try {
                 tmpValue = convertDateValue(value);
@@ -103,7 +106,7 @@ public class CompareFilter implements IOperationFilter {
 
     @Override
     public String getCondition(Object value) {
-        return value + getCondition() + getValue();
+        return value + " " +  getCondition() + " " + getValue();
     }
 
     @Override
