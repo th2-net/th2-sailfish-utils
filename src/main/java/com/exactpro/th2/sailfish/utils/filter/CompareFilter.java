@@ -34,18 +34,15 @@ public class CompareFilter implements IOperationFilter {
     private final boolean isNumber;
 
     public CompareFilter(FilterOperation operation, String value) {
-        boolean isTmpNumber;
         Objects.requireNonNull(value);
         Exception potentialException = null;
         Comparable<?> tmpValue = null;
         try {
             tmpValue = convertValue(value);
-            isTmpNumber = true;
         } catch (NumberFormatException e) {
             potentialException = new IllegalArgumentException("Failed to parse value to Number. Value = " + value, e);
-            isTmpNumber = false;
         }
-        isNumber = isTmpNumber;
+        isNumber = tmpValue != null;
         if (!isNumber) {
             try {
                 tmpValue = convertDateValue(value);
