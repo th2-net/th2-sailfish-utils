@@ -28,22 +28,6 @@ import java.util.Map.Entry;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
-import com.exactpro.sf.common.impl.messages.xml.configuration.JavaType;
-import com.exactpro.sf.comparison.conversion.ConversionException;
-import com.exactpro.sf.comparison.conversion.IConverter;
-import com.exactpro.sf.comparison.conversion.impl.BooleanConverter;
-import com.exactpro.sf.comparison.conversion.impl.ByteConverter;
-import com.exactpro.sf.comparison.conversion.impl.IntegerConverter;
-import com.exactpro.sf.comparison.conversion.impl.ShortConverter;
-import com.exactpro.sf.comparison.conversion.impl.BigDecimalConverter;
-import com.exactpro.sf.comparison.conversion.impl.CharacterConverter;
-import com.exactpro.sf.comparison.conversion.impl.FloatConverter;
-import com.exactpro.sf.comparison.conversion.impl.LocalDateConverter;
-import com.exactpro.sf.comparison.conversion.impl.LocalDateTimeConverter;
-import com.exactpro.sf.comparison.conversion.impl.LocalTimeConverter;
-import com.exactpro.sf.comparison.conversion.impl.LongConverter;
-import com.exactpro.sf.comparison.conversion.impl.DoubleConverter;
-import com.exactpro.sf.comparison.conversion.impl.StringConverter;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.text.StringEscapeUtils;
 import org.jetbrains.annotations.NotNull;
@@ -52,6 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.exactpro.sf.aml.scriptutil.StaticUtil;
+import com.exactpro.sf.common.impl.messages.xml.configuration.JavaType;
 import com.exactpro.sf.common.messages.IMessage;
 import com.exactpro.sf.common.messages.IMetadata;
 import com.exactpro.sf.common.messages.MetadataExtensions;
@@ -60,6 +45,21 @@ import com.exactpro.sf.common.messages.structures.IDictionaryStructure;
 import com.exactpro.sf.common.messages.structures.IFieldStructure;
 import com.exactpro.sf.common.messages.structures.IMessageStructure;
 import com.exactpro.sf.common.util.StringUtil;
+import com.exactpro.sf.comparison.conversion.ConversionException;
+import com.exactpro.sf.comparison.conversion.IConverter;
+import com.exactpro.sf.comparison.conversion.impl.BigDecimalConverter;
+import com.exactpro.sf.comparison.conversion.impl.BooleanConverter;
+import com.exactpro.sf.comparison.conversion.impl.ByteConverter;
+import com.exactpro.sf.comparison.conversion.impl.CharacterConverter;
+import com.exactpro.sf.comparison.conversion.impl.DoubleConverter;
+import com.exactpro.sf.comparison.conversion.impl.FloatConverter;
+import com.exactpro.sf.comparison.conversion.impl.IntegerConverter;
+import com.exactpro.sf.comparison.conversion.impl.LocalDateConverter;
+import com.exactpro.sf.comparison.conversion.impl.LocalDateTimeConverter;
+import com.exactpro.sf.comparison.conversion.impl.LocalTimeConverter;
+import com.exactpro.sf.comparison.conversion.impl.LongConverter;
+import com.exactpro.sf.comparison.conversion.impl.ShortConverter;
+import com.exactpro.sf.comparison.conversion.impl.StringConverter;
 import com.exactpro.sf.configuration.suri.SailfishURI;
 import com.exactpro.sf.externalapi.IMessageFactoryProxy;
 import com.exactpro.th2.common.grpc.FilterOperation;
@@ -72,6 +72,10 @@ import com.exactpro.th2.common.grpc.MetadataFilter.SimpleFilter;
 import com.exactpro.th2.common.grpc.Value;
 import com.exactpro.th2.common.grpc.Value.KindCase;
 import com.exactpro.th2.common.grpc.ValueFilter;
+import com.exactpro.th2.sailfish.utils.filter.CompareFilter;
+import com.exactpro.th2.sailfish.utils.filter.ListContainFilter;
+import com.exactpro.th2.sailfish.utils.filter.RegExFilter;
+import com.exactpro.th2.sailfish.utils.filter.WildcardFilter;
 import com.google.protobuf.InvalidProtocolBufferException;
 
 public class ProtoToIMessageConverter {
@@ -181,6 +185,12 @@ public class ProtoToIMessageConverter {
         if (value.hasMessageFilter()) {
             return fromProtoFilter(value.getMessageFilter(), fieldname);
         }
+        if (value.hasSimpleList()) {
+            if (value.getOperation() == FilterOperation.IN || value.getOperation() == FilterOperation.NOT_IN) {
+                return new ListContainFilter(value.getOperation(), value.getSimpleList().getSimpleValuesList());
+            }
+            throw new IllegalArgumentException(String.format("The operation doesn't match the value {%s}, {%s}", value.getOperation(), value.getSimpleList()));
+        }
         return toSimpleFilter(value.getOperation(), value.getSimpleFilter());
     }
 
@@ -195,6 +205,17 @@ public class ProtoToIMessageConverter {
                 return StaticUtil.nullFilter(0, null);
             case NOT_EMPTY:
                 return StaticUtil.notNullFilter(0, null);
+            case LIKE:
+            case NOT_LIKE:
+                return new RegExFilter(operation, simpleFilter);
+            case LESS:
+            case NOT_LESS:
+            case MORE:
+            case NOT_MORE:
+                return new CompareFilter(operation, simpleFilter);
+            case WILDCARD:
+            case NOT_WILDCARD:
+                return new WildcardFilter(operation, simpleFilter);
             default:
                 throw new IllegalArgumentException("Unsupported operation " + operation);
         }
