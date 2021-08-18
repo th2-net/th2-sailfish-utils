@@ -86,13 +86,13 @@ public class CompareFilter implements IOperationFilter {
             }
         } else {
             try {
-                tmpValue = (Comparable<?>)convertDateValue((String)value);
+                tmpValue = convertDateValue((String)value);
             } catch (DateTimeParseException ex) {
                 throw new IllegalArgumentException("Failed to parse value to Date. Value = " + value, ex);
             }
         }
 
-        return ExpressionResult.create(compareValues(tmpValue, (Comparable<?>)this.value));
+        return ExpressionResult.create(compareValues(tmpValue, this.value));
 
     }
 
@@ -150,7 +150,7 @@ public class CompareFilter implements IOperationFilter {
     }
 
     private int compareValueWithoutOperation(Comparable<?> first, Comparable<?> second) {
-        if (first.getClass().equals(second.getClass())) {
+        if (first.getClass() == second.getClass()) {
             if (first instanceof LocalDate) {
                 return  ((LocalDate)first).compareTo((LocalDate)second);
             }

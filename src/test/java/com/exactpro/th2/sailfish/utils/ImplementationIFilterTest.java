@@ -16,9 +16,12 @@
 package com.exactpro.th2.sailfish.utils;
 
 import java.util.Arrays;
+import java.util.List;
 
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import com.exactpro.sf.common.messages.IMessage;
 import com.exactpro.sf.comparison.ComparatorSettings;
@@ -42,558 +45,142 @@ public class ImplementationIFilterTest extends AbstractConverterTest {
             messageFactory, null, dictionaryURI
     );
 
-    @Test
-    void listContainsValueFilter() {
+    private static List<Arguments> inOperationFilter() {
+        return Arrays.asList(
+                Arguments.of("A", StatusType.PASSED, FilterOperation.IN),
+                Arguments.of("D", StatusType.FAILED, FilterOperation.IN),
+                Arguments.of("D", StatusType.PASSED, FilterOperation.NOT_IN),
+                Arguments.of("A", StatusType.FAILED, FilterOperation.NOT_IN)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("inOperationFilter")
+    void testListContainsValueFilter(String value, StatusType status, FilterOperation operation) {
         RootMessageFilter filter = RootMessageFilter.newBuilder()
                 .setMessageType(MESSAGE_TYPE)
                 .setMessageFilter(MessageFilter.newBuilder()
                         .putFields("containFilter", ValueFilter.newBuilder()
                                 .setSimpleList(SimpleList.newBuilder()
                                         .addAllSimpleValues(Arrays.asList("A", "B", "C")))
-                                .setOperation(FilterOperation.IN)
+                                .setOperation(operation)
                                 .build())
                         .build())
                 .build();
 
         Message actual = createMessageBuilder(MESSAGE_TYPE)
-                .putFields("containFilter", getSimpleValue("A"))
+                .putFields("containFilter", getSimpleValue(value))
                 .build();
 
         ComparisonResult result = getResult(actual, filter);
 
-        Assertions.assertEquals(StatusType.PASSED, result.getResult("containFilter").getStatus());
+        Assertions.assertEquals(status, result.getResult("containFilter").getStatus());
     }
 
-    @Test
-    void listDoesNotContainValueFilter() {
+    private static List<Arguments> twoSimpleValuesFilterOperation() {
+        return Arrays.asList(
+                Arguments.of("10.1", "11", StatusType.PASSED, FilterOperation.MORE),
+                Arguments.of("2007-12-03T10:15:30", "2007-12-03T10:15:30", StatusType.FAILED, FilterOperation.MORE),
+                Arguments.of("10.2", "10.2", StatusType.PASSED, FilterOperation.NOT_MORE),
+                Arguments.of("10:15:30", "10:15:31", StatusType.FAILED, FilterOperation.NOT_MORE),
+                Arguments.of("10.2", "10", StatusType.PASSED, FilterOperation.NOT_MORE),
+                Arguments.of("10.1", "10", StatusType.PASSED, FilterOperation.LESS),
+                Arguments.of("2007-12-03", "2008-12-03", StatusType.FAILED, FilterOperation.LESS),
+                Arguments.of("2007-12-03T10:15:30", "2007-12-03T10:15:30", StatusType.PASSED, FilterOperation.NOT_LESS),
+                Arguments.of("10.1", "10.2", StatusType.PASSED, FilterOperation.NOT_LESS),
+                Arguments.of("10.1", "10", StatusType.FAILED, FilterOperation.NOT_LESS),
+                Arguments.of("c.*", "c.txt", StatusType.PASSED, FilterOperation.WILDCARD),
+                Arguments.of("*.?", "c.txt", StatusType.FAILED, FilterOperation.WILDCARD),
+                Arguments.of("??.*", "c.txt", StatusType.PASSED, FilterOperation.NOT_WILDCARD),
+                Arguments.of("?*", "c.txt", StatusType.FAILED, FilterOperation.NOT_WILDCARD),
+                Arguments.of("A.+a", "Abbbb Abba Abbbbabbba", StatusType.PASSED, FilterOperation.LIKE),
+                Arguments.of("A.++a", "Abbbb Abba Abbbbabbba", StatusType.FAILED, FilterOperation.LIKE),
+                Arguments.of("A.+?a", "Abbbb Abba Abbbbabbba", StatusType.PASSED, FilterOperation.LIKE),
+                Arguments.of("A.+?b", "Abbbb Abba Abbbbabbba", StatusType.PASSED, FilterOperation.NOT_LIKE),
+                Arguments.of("A.+?a", "Abbbb Abba Abbbbabbba", StatusType.FAILED, FilterOperation.NOT_LIKE)
+
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("twoSimpleValuesFilterOperation")
+    void testTwoSimpleValuesFilterOperationFilter(String filterValue, String messageValue, StatusType status, FilterOperation operation) {
         RootMessageFilter filter = RootMessageFilter.newBuilder()
                 .setMessageType(MESSAGE_TYPE)
                 .setMessageFilter(MessageFilter.newBuilder()
-                        .putFields("containFilter", ValueFilter.newBuilder()
-                                .setSimpleList(SimpleList.newBuilder()
-                                        .addAllSimpleValues(Arrays.asList("A", "B", "C")))
-                                .setOperation(FilterOperation.IN)
+                        .putFields("compareFilter", ValueFilter.newBuilder()
+                                .setSimpleFilter(filterValue)
+                                .setOperation(operation)
                                 .build())
                         .build())
                 .build();
 
         Message actual = createMessageBuilder(MESSAGE_TYPE)
-                .putFields("containFilter", getSimpleValue("D"))
+                .putFields("compareFilter", getSimpleValue(messageValue))
                 .build();
 
         ComparisonResult result = getResult(actual, filter);
 
-        Assertions.assertEquals(StatusType.FAILED, result.getResult("containFilter").getStatus());
+        Assertions.assertEquals(status, result.getResult("compareFilter").getStatus());
     }
 
-    @Test
-    void valueWasNotContainedInNotContainFilter() {
+    private static List<Arguments> filterError() {
+        return Arrays.asList(
+                Arguments.of("10.1", "10,2", StatusType.FAILED, FilterOperation.LESS, "Failed to parse value to Number. Value = 10,2"),
+                Arguments.of("2007-12-03T10:15:30", "2007-12-03T10-15-30", StatusType.FAILED, FilterOperation.MORE, "Failed to parse value to Date. Value = 2007-12-03T10-15-30"),
+                Arguments.of("2007-12-03", "2007-12-03T10:15:30", StatusType.FAILED, FilterOperation.NOT_MORE, "Failed to compare Temporal values {2007-12-03T10:15:30}, {2007-12-03}")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("filterError")
+    void testFilterWithError(String first, String second, StatusType status, FilterOperation operation, String errorMessage) {
         RootMessageFilter filter = RootMessageFilter.newBuilder()
                 .setMessageType(MESSAGE_TYPE)
                 .setMessageFilter(MessageFilter.newBuilder()
-                        .putFields("notContain", ValueFilter.newBuilder()
-                                .setSimpleList(SimpleList.newBuilder()
-                                        .addAllSimpleValues(Arrays.asList("A", "B", "C")))
-                                .setOperation(FilterOperation.NOT_IN)
+                        .putFields("errorFilter", ValueFilter.newBuilder()
+                                .setSimpleFilter(first)
+                                .setOperation(operation)
                                 .build())
                         .build())
                 .build();
 
         Message actual = createMessageBuilder(MESSAGE_TYPE)
-                .putFields("notContain", getSimpleValue("D"))
+                .putFields("errorFilter", getSimpleValue(second))
                 .build();
 
         ComparisonResult result = getResult(actual, filter);
 
-        Assertions.assertEquals(StatusType.PASSED, result.getResult("notContain").getStatus());
+        Assertions.assertEquals(status, result.getResult("errorFilter").getStatus());
+        Assertions.assertEquals(errorMessage, result.getResult("errorFilter").getExceptionMessage());
     }
 
-    @Test
-    void valueWasContainedInNotContainFilter() {
+    private static List<Arguments> filterException() {
+        return Arrays.asList(
+                Arguments.of("10,1", "102"),
+                Arguments.of("2007-12-03T10-15:30", "2007-12-03T10:15:30")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("filterException")
+    void testFilterWithException(String first, String second) {
         RootMessageFilter filter = RootMessageFilter.newBuilder()
                 .setMessageType(MESSAGE_TYPE)
                 .setMessageFilter(MessageFilter.newBuilder()
-                        .putFields("notContain", ValueFilter.newBuilder()
-                                .setSimpleList(SimpleList.newBuilder()
-                                        .addAllSimpleValues(Arrays.asList("A", "B", "C")))
-                                .setOperation(FilterOperation.NOT_IN)
-                                .build())
-                        .build())
-                .build();
-
-        Message actual = createMessageBuilder(MESSAGE_TYPE)
-                .putFields("notContain", getSimpleValue("A"))
-                .build();
-
-        ComparisonResult result = getResult(actual, filter);
-
-        Assertions.assertEquals(StatusType.FAILED, result.getResult("notContain").getStatus());
-    }
-
-    @Test
-    void regExGreedyFilter() {
-        RootMessageFilter filter = RootMessageFilter.newBuilder()
-                .setMessageType(MESSAGE_TYPE)
-                .setMessageFilter(MessageFilter.newBuilder()
-                        .putFields("regexFilter", ValueFilter.newBuilder()
-                                .setSimpleFilter("A.+a")
-                                .setOperation(FilterOperation.LIKE)
-                                .build())
-                        .build())
-                .build();
-
-        Message actual = createMessageBuilder(MESSAGE_TYPE)
-                .putFields("regexFilter", getSimpleValue("Abbbb Abba Abbbbabbba"))
-                .build();
-
-        ComparisonResult result = getResult(actual, filter);
-
-        Assertions.assertEquals(StatusType.PASSED, result.getResult("regexFilter").getStatus());
-    }
-
-    @Test
-    void regExPossessiveFilter() {
-        RootMessageFilter filter = RootMessageFilter.newBuilder()
-                .setMessageType(MESSAGE_TYPE)
-                .setMessageFilter(MessageFilter.newBuilder()
-                        .putFields("regexFilter", ValueFilter.newBuilder()
-                                .setSimpleFilter("A.++a")
-                                .setOperation(FilterOperation.LIKE)
-                                .build())
-                        .build())
-                .build();
-
-        Message actual = createMessageBuilder(MESSAGE_TYPE)
-                .putFields("regexFilter", getSimpleValue("Abbbb Abba Abbbbabbba"))
-                .build();
-
-        ComparisonResult result = getResult(actual, filter);
-
-        Assertions.assertEquals(StatusType.FAILED, result.getResult("regexFilter").getStatus());
-    }
-
-    @Test
-    void regExLazyFilter() {
-        RootMessageFilter filter = RootMessageFilter.newBuilder()
-                .setMessageType(MESSAGE_TYPE)
-                .setMessageFilter(MessageFilter.newBuilder()
-                        .putFields("regexFilter", ValueFilter.newBuilder()
-                                .setSimpleFilter("A.+?a")
-                                .setOperation(FilterOperation.LIKE)
-                                .build())
-                        .build())
-                .build();
-
-        Message actual = createMessageBuilder(MESSAGE_TYPE)
-                .putFields("regexFilter", getSimpleValue("Abbbb Abba Abbbbabbba"))
-                .build();
-
-        ComparisonResult result = getResult(actual, filter);
-
-        Assertions.assertEquals(StatusType.PASSED, result.getResult("regexFilter").getStatus());
-    }
-
-    @Test
-    void notLikeFilter() {
-        RootMessageFilter filter = RootMessageFilter.newBuilder()
-                .setMessageType(MESSAGE_TYPE)
-                .setMessageFilter(MessageFilter.newBuilder()
-                        .putFields("regexFilter", ValueFilter.newBuilder()
-                                .setSimpleFilter("A.+?a")
-                                .setOperation(FilterOperation.NOT_LIKE)
-                                .build())
-                        .build())
-                .build();
-
-        Message actual = createMessageBuilder(MESSAGE_TYPE)
-                .putFields("regexFilter", getSimpleValue("Abbbb Abba Abbbbabbb"))
-                .build();
-
-        ComparisonResult result = getResult(actual, filter);
-
-        Assertions.assertEquals(StatusType.PASSED, result.getResult("regexFilter").getStatus());
-    }
-
-    @Test
-    void numberMoreFilter() {
-        RootMessageFilter filter = RootMessageFilter.newBuilder()
-                .setMessageType(MESSAGE_TYPE)
-                .setMessageFilter(MessageFilter.newBuilder()
-                        .putFields("numberMoreFilter", ValueFilter.newBuilder()
-                                .setSimpleFilter("10.1")
+                        .putFields("filterException", ValueFilter.newBuilder()
+                                .setSimpleFilter(first)
                                 .setOperation(FilterOperation.MORE)
                                 .build())
                         .build())
                 .build();
 
         Message actual = createMessageBuilder(MESSAGE_TYPE)
-                .putFields("numberMoreFilter", getSimpleValue("102"))
-                .build();
-
-        ComparisonResult result = getResult(actual, filter);
-
-        Assertions.assertEquals(StatusType.PASSED, result.getResult("numberMoreFilter").getStatus());
-    }
-
-    @Test
-    void numberMoreFilterWithError() {
-        RootMessageFilter filter = RootMessageFilter.newBuilder()
-                .setMessageType(MESSAGE_TYPE)
-                .setMessageFilter(MessageFilter.newBuilder()
-                        .putFields("numberMoreFilterWithError", ValueFilter.newBuilder()
-                                .setSimpleFilter("10.1")
-                                .setOperation(FilterOperation.MORE)
-                                .build())
-                        .build())
-                .build();
-
-        Message actual = createMessageBuilder(MESSAGE_TYPE)
-                .putFields("numberMoreFilterWithError", getSimpleValue("10,2"))
-                .build();
-
-        ComparisonResult result = getResult(actual, filter);
-
-        Assertions.assertEquals(StatusType.FAILED, result.getResult("numberMoreFilterWithError").getStatus());
-        Assertions.assertEquals("Failed to parse value to Number. Value = 10,2", result.getResult("numberMoreFilterWithError").getExceptionMessage());
-
-    }
-
-    @Test
-    void numberMoreFilterException() {
-        RootMessageFilter filter = RootMessageFilter.newBuilder()
-                .setMessageType(MESSAGE_TYPE)
-                .setMessageFilter(MessageFilter.newBuilder()
-                        .putFields("numberMoreFilterException", ValueFilter.newBuilder()
-                                .setSimpleFilter("10,1")
-                                .setOperation(FilterOperation.MORE)
-                                .build())
-                        .build())
-                .build();
-
-        Message actual = createMessageBuilder(MESSAGE_TYPE)
-                .putFields("numberMoreFilterException", getSimpleValue("102"))
+                .putFields("filterException", getSimpleValue(second))
                 .build();
 
         Assertions.assertThrows(IllegalArgumentException.class, () -> getResult(actual, filter));
     }
-
-
-    @Test
-    void numberNotMoreFilterPositive() {
-        RootMessageFilter filter = RootMessageFilter.newBuilder()
-                .setMessageType(MESSAGE_TYPE)
-                .setMessageFilter(MessageFilter.newBuilder()
-                        .putFields("numberNotMoreFilterPositive", ValueFilter.newBuilder()
-                                .setSimpleFilter("101")
-                                .setOperation(FilterOperation.NOT_MORE)
-                                .build())
-                        .build())
-                .build();
-
-        Message actual = createMessageBuilder(MESSAGE_TYPE)
-                .putFields("numberNotMoreFilterPositive", getSimpleValue("10.2"))
-                .build();
-
-        ComparisonResult result = getResult(actual, filter);
-
-        Assertions.assertEquals(StatusType.PASSED, result.getResult("numberNotMoreFilterPositive").getStatus());
-    }
-
-    @Test
-    void numberNotMoreFilterEqual() {
-        RootMessageFilter filter = RootMessageFilter.newBuilder()
-                .setMessageType(MESSAGE_TYPE)
-                .setMessageFilter(MessageFilter.newBuilder()
-                        .putFields("numberNotMoreFilterEqual", ValueFilter.newBuilder()
-                                .setSimpleFilter("101")
-                                .setOperation(FilterOperation.NOT_MORE)
-                                .build())
-                        .build())
-                .build();
-
-        Message actual = createMessageBuilder(MESSAGE_TYPE)
-                .putFields("numberNotMoreFilterEqual", getSimpleValue("101"))
-                .build();
-
-        ComparisonResult result = getResult(actual, filter);
-
-        Assertions.assertEquals(StatusType.PASSED, result.getResult("numberNotMoreFilterEqual").getStatus());
-    }
-
-    @Test
-    void mathNotMoreFilterNegative() {
-        RootMessageFilter filter = RootMessageFilter.newBuilder()
-                .setMessageType(MESSAGE_TYPE)
-                .setMessageFilter(MessageFilter.newBuilder()
-                        .putFields("mathNotMoreFilterNegative", ValueFilter.newBuilder()
-                                .setSimpleFilter("101")
-                                .setOperation(FilterOperation.NOT_MORE)
-                                .build())
-                        .build())
-                .build();
-
-        Message actual = createMessageBuilder(MESSAGE_TYPE)
-                .putFields("mathNotMoreFilterNegative", getSimpleValue("100"))
-                .build();
-
-        ComparisonResult result = getResult(actual, filter);
-
-        Assertions.assertEquals(StatusType.PASSED, result.getResult("mathNotMoreFilterNegative").getStatus());
-    }
-
-    @Test
-    void mathLessFilter() {
-        RootMessageFilter filter = RootMessageFilter.newBuilder()
-                .setMessageType(MESSAGE_TYPE)
-                .setMessageFilter(MessageFilter.newBuilder()
-                        .putFields("mathLessFilter", ValueFilter.newBuilder()
-                                .setSimpleFilter("101")
-                                .setOperation(FilterOperation.LESS)
-                                .build())
-                        .build())
-                .build();
-
-        Message actual = createMessageBuilder(MESSAGE_TYPE)
-                .putFields("mathLessFilter", getSimpleValue("10.0"))
-                .build();
-
-        ComparisonResult result = getResult(actual, filter);
-
-        Assertions.assertEquals(StatusType.PASSED, result.getResult("mathLessFilter").getStatus());
-    }
-
-    @Test
-    void mathNotLessFilter() {
-        RootMessageFilter filter = RootMessageFilter.newBuilder()
-                .setMessageType(MESSAGE_TYPE)
-                .setMessageFilter(MessageFilter.newBuilder()
-                        .putFields("mathLessFilter", ValueFilter.newBuilder()
-                                .setSimpleFilter("10.1")
-                                .setOperation(FilterOperation.NOT_LESS)
-                                .build())
-                        .build())
-                .build();
-
-        Message actual = createMessageBuilder(MESSAGE_TYPE)
-                .putFields("mathLessFilter", getSimpleValue("100"))
-                .build();
-
-        ComparisonResult result = getResult(actual, filter);
-
-        Assertions.assertEquals(StatusType.PASSED, result.getResult("mathLessFilter").getStatus());
-    }
-
-    @Test
-    void dateTimeNotLessFilter() {
-        RootMessageFilter filter = RootMessageFilter.newBuilder()
-                .setMessageType(MESSAGE_TYPE)
-                .setMessageFilter(MessageFilter.newBuilder()
-                        .putFields("dateTimeNotLessFilter", ValueFilter.newBuilder()
-                                .setSimpleFilter("2007-12-03T10:15:30")
-                                .setOperation(FilterOperation.NOT_LESS)
-                                .build())
-                        .build())
-                .build();
-
-        Message actual = createMessageBuilder(MESSAGE_TYPE)
-                .putFields("dateTimeNotLessFilter", getSimpleValue("2007-12-03T10:15:31"))
-                .build();
-
-        ComparisonResult result = getResult(actual, filter);
-
-        Assertions.assertEquals(StatusType.PASSED, result.getResult("dateTimeNotLessFilter").getStatus());
-    }
-
-    @Test
-    void dateMoreFilter() {
-        RootMessageFilter filter = RootMessageFilter.newBuilder()
-                .setMessageType(MESSAGE_TYPE)
-                .setMessageFilter(MessageFilter.newBuilder()
-                        .putFields("dateMoreFilter", ValueFilter.newBuilder()
-                                .setSimpleFilter("2007-12-03")
-                                .setOperation(FilterOperation.MORE)
-                                .build())
-                        .build())
-                .build();
-
-        Message actual = createMessageBuilder(MESSAGE_TYPE)
-                .putFields("dateMoreFilter", getSimpleValue("2007-12-04"))
-                .build();
-
-        ComparisonResult result = getResult(actual, filter);
-
-        Assertions.assertEquals(StatusType.PASSED, result.getResult("dateMoreFilter").getStatus());
-    }
-
-    @Test
-    void timeMoreFilter() {
-        RootMessageFilter filter = RootMessageFilter.newBuilder()
-                .setMessageType(MESSAGE_TYPE)
-                .setMessageFilter(MessageFilter.newBuilder()
-                        .putFields("timeMoreFilter", ValueFilter.newBuilder()
-                                .setSimpleFilter("10:15:30")
-                                .setOperation(FilterOperation.MORE)
-                                .build())
-                        .build())
-                .build();
-
-        Message actual = createMessageBuilder(MESSAGE_TYPE)
-                .putFields("timeMoreFilter", getSimpleValue("10:15:31"))
-                .build();
-
-        ComparisonResult result = getResult(actual, filter);
-
-        Assertions.assertEquals(StatusType.PASSED, result.getResult("timeMoreFilter").getStatus());
-    }
-
-    @Test
-    void dateTimeMoreFilterException() {
-        RootMessageFilter filter = RootMessageFilter.newBuilder()
-                .setMessageType(MESSAGE_TYPE)
-                .setMessageFilter(MessageFilter.newBuilder()
-                        .putFields("dateTimeMoreFilterException", ValueFilter.newBuilder()
-                                .setSimpleFilter("2007-12-03T10-15:30")
-                                .setOperation(FilterOperation.MORE)
-                                .build())
-                        .build())
-                .build();
-
-        Message actual = createMessageBuilder(MESSAGE_TYPE)
-                .putFields("dateTimeMoreFilterException", getSimpleValue("2007-12-03T10:15:30"))
-                .build();
-
-        Assertions.assertThrows(IllegalArgumentException.class, ()->getResult(actual, filter));
-    }
-
-    @Test
-    void dateTimeMoreFilterError() {
-        RootMessageFilter filter = RootMessageFilter.newBuilder()
-                .setMessageType(MESSAGE_TYPE)
-                .setMessageFilter(MessageFilter.newBuilder()
-                        .putFields("dateTimeMoreFilterNegative", ValueFilter.newBuilder()
-                                .setSimpleFilter("2007-12-03T10:15:30")
-                                .setOperation(FilterOperation.MORE)
-                                .build())
-                        .build())
-                .build();
-
-        Message actual = createMessageBuilder(MESSAGE_TYPE)
-                .putFields("dateTimeMoreFilterNegative", getSimpleValue("2007-12-03T10-15-30"))
-                .build();
-
-        ComparisonResult result = getResult(actual, filter);
-
-        Assertions.assertEquals(StatusType.FAILED, result.getResult("dateTimeMoreFilterNegative").getStatus());
-        Assertions.assertEquals("Failed to parse value to Date. Value = 2007-12-03T10-15-30", result.getResult("dateTimeMoreFilterNegative").getExceptionMessage());
-    }
-
-    @Test
-    void differentTemporalTypesTest() {
-        RootMessageFilter filter = RootMessageFilter.newBuilder()
-                .setMessageType(MESSAGE_TYPE)
-                .setMessageFilter(MessageFilter.newBuilder()
-                        .putFields("dateTimeMoreFilterNegative", ValueFilter.newBuilder()
-                                .setSimpleFilter("10:15:30")
-                                .setOperation(FilterOperation.MORE)
-                                .build())
-                        .build())
-                .build();
-
-        Message actual = createMessageBuilder(MESSAGE_TYPE)
-                .putFields("dateTimeMoreFilterNegative", getSimpleValue("2007-12-03T10:15:30"))
-                .build();
-
-        ComparisonResult result = getResult(actual, filter);
-
-        Assertions.assertEquals(StatusType.FAILED, result.getResult("dateTimeMoreFilterNegative").getStatus());
-        Assertions.assertEquals("Failed to compare Temporal values {2007-12-03T10:15:30}, {10:15:30}", result.getResult("dateTimeMoreFilterNegative").getExceptionMessage());
-    }
-
-    @Test
-    void wilcardFilterPossitive() {
-        RootMessageFilter filter = RootMessageFilter.newBuilder()
-                .setMessageType(MESSAGE_TYPE)
-                .setMessageFilter(MessageFilter.newBuilder()
-                        .putFields("wilcardFilterPossitive", ValueFilter.newBuilder()
-                                .setSimpleFilter("c.*")
-                                .setOperation(FilterOperation.WILDCARD)
-                                .build())
-                        .build())
-                .build();
-
-        Message actual = createMessageBuilder(MESSAGE_TYPE)
-                .putFields("wilcardFilterPossitive", getSimpleValue("c.txt"))
-                .build();
-
-        ComparisonResult result = getResult(actual, filter);
-
-        Assertions.assertEquals(StatusType.PASSED, result.getResult("wilcardFilterPossitive").getStatus());
-    }
-
-    @Test
-    void wilcardFilterNegative() {
-        RootMessageFilter filter = RootMessageFilter.newBuilder()
-                .setMessageType(MESSAGE_TYPE)
-                .setMessageFilter(MessageFilter.newBuilder()
-                        .putFields("wilcardFilterNegative", ValueFilter.newBuilder()
-                                .setSimpleFilter("*.?")
-                                .setOperation(FilterOperation.WILDCARD)
-                                .build())
-                        .build())
-                .build();
-
-        Message actual = createMessageBuilder(MESSAGE_TYPE)
-                .putFields("wilcardFilterNegative", getSimpleValue("c.txt"))
-                .build();
-
-        ComparisonResult result = getResult(actual, filter);
-
-        Assertions.assertEquals(StatusType.FAILED, result.getResult("wilcardFilterNegative").getStatus());
-    }
-
-    @Test
-    void notWilcardFilterPossitive() {
-        RootMessageFilter filter = RootMessageFilter.newBuilder()
-                .setMessageType(MESSAGE_TYPE)
-                .setMessageFilter(MessageFilter.newBuilder()
-                        .putFields("notWilcardFilterPossitive", ValueFilter.newBuilder()
-                                .setSimpleFilter("c.?")
-                                .setOperation(FilterOperation.NOT_WILDCARD)
-                                .build())
-                        .build())
-                .build();
-
-        Message actual = createMessageBuilder(MESSAGE_TYPE)
-                .putFields("notWilcardFilterPossitive", getSimpleValue("c.txt"))
-                .build();
-
-        ComparisonResult result = getResult(actual, filter);
-
-        Assertions.assertEquals(StatusType.PASSED, result.getResult("notWilcardFilterPossitive").getStatus());
-    }
-
-    @Test
-    void notWilcardFilterNegative() {
-        RootMessageFilter filter = RootMessageFilter.newBuilder()
-                .setMessageType(MESSAGE_TYPE)
-                .setMessageFilter(MessageFilter.newBuilder()
-                        .putFields("notWilcardFilterNegative", ValueFilter.newBuilder()
-                                .setSimpleFilter("?.*")
-                                .setOperation(FilterOperation.NOT_WILDCARD)
-                                .build())
-                        .build())
-                .build();
-
-        Message actual = createMessageBuilder(MESSAGE_TYPE)
-                .putFields("notWilcardFilterNegative", getSimpleValue("c.txt"))
-                .build();
-
-        ComparisonResult result = getResult(actual, filter);
-
-        Assertions.assertEquals(StatusType.FAILED, result.getResult("notWilcardFilterNegative").getStatus());
-    }
-
-
 
     private ComparisonResult getResult(Message actual, RootMessageFilter filter) {
         MessageWrapper actualIMessage = converter.fromProtoMessage(actual, false);
