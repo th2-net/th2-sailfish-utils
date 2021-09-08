@@ -34,7 +34,6 @@ import com.exactpro.th2.common.grpc.ListValue;
 import com.exactpro.th2.common.grpc.Message;
 import com.exactpro.th2.common.grpc.Value;
 import com.exactpro.th2.common.grpc.Value.KindCase;
-import com.exactpro.th2.sailfish.utils.IMessageToProtoConverter.Parameters;
 
 class TestIMessageToProtoConverter extends AbstractConverterTest {
 
@@ -62,7 +61,7 @@ class TestIMessageToProtoConverter extends AbstractConverterTest {
         IMessage message = createMessage("test");
         message.addField("bd", new BigDecimal("0.0000000"));
         message.addField("bdCollection", List.of(new BigDecimal("0.00000000")));
-        Message protoMessage = new IMessageToProtoConverter(Parameters.builder().setStripTrailingZeros(true).build())
+        Message protoMessage = new IMessageToProtoConverter(IMessageToProtoConverter.parametersBuilder().setStripTrailingZeros(true).build())
                 .toProtoMessage(message).build();
         assertAll(
                 () -> {

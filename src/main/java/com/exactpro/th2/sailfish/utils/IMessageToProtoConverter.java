@@ -19,7 +19,6 @@ import static java.util.Objects.requireNonNull;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Objects;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -103,8 +102,12 @@ public class IMessageToProtoConverter {
         return nestedMessageBuilder.build();
     }
 
+    public static Parameters.Builder parametersBuilder() {
+        return new Parameters.Builder();
+    }
+
     public static class Parameters {
-        public static final Parameters DEFAULT = builder().build();
+        public static final Parameters DEFAULT = parametersBuilder().build();
         private final boolean stripTrailingZeros;
 
         private Parameters(boolean stripTrailingZeros) {
@@ -113,10 +116,6 @@ public class IMessageToProtoConverter {
 
         public boolean isStripTrailingZeros() {
             return stripTrailingZeros;
-        }
-
-        public static Builder builder() {
-            return new Builder();
         }
 
         public static class Builder {
