@@ -1,9 +1,17 @@
-# th2 Sailfish Utils (3.7.0)
+# th2 Sailfish Utils (3.8.0)
 
 This library contains classes to convert messages from th2 to Sailfish format and vice versa. They are used in several th2 projects to reuse Sailfish features: message comparison, codec/connect implementations, etc.
 
 ## Release Notes
 
+### 3.8.0
+
+#### Changed:
++ The converter adds `BigDecimal` in `plain` format to proto `Message`
+
+#### Added:
++ Parameters for `IMessageToProtoConverter`:
+  + **stripTrailingZeros** - removes trailing zeroes for `BigDecimal` (_0.100000_ -> _0.1_)
 
 ### 3.7.0
 

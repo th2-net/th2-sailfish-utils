@@ -43,6 +43,7 @@ buildinfo.htm
 #JMH files
 BenchmarkList
 CompilerHints
+src/test/generated_tests
 
 #Sailfish
 shared_workspace

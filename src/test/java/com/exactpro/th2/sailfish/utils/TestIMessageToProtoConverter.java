@@ -16,11 +16,14 @@
 
 package com.exactpro.th2.sailfish.utils;
 
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.math.BigDecimal;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
@@ -33,14 +36,13 @@ import com.exactpro.th2.common.grpc.Value;
 import com.exactpro.th2.common.grpc.Value.KindCase;
 
 class TestIMessageToProtoConverter extends AbstractConverterTest {
-    private static final IMessageToProtoConverter CONVERTER = new IMessageToProtoConverter();
 
     @Test
     void convertsEmptyCollectionInField() {
-        IMessage message = DefaultMessageFactory.getFactory().createMessage("Test", "test");
+        IMessage message = createMessage("Test");
         message.addField("emptyCol", Collections.emptyList());
-
-        Message convertedMessage = CONVERTER.toProtoMessage(message).build();
+        IMessageToProtoConverter converter = new IMessageToProtoConverter();
+        Message convertedMessage = converter.toProtoMessage(message).build();
         assertEquals("Test", convertedMessage.getMetadata().getMessageType(), () -> "Converted message: " + convertedMessage);
         Map<String, Value> fieldsMap = convertedMessage.getFieldsMap();
         assertEquals(1, fieldsMap.size(), "Unexpected fields count: " + fieldsMap);
@@ -52,5 +54,52 @@ class TestIMessageToProtoConverter extends AbstractConverterTest {
         ListValue listValue = emptyColValue.getListValue();
         assertNotNull(listValue, () -> "Null list value: " + emptyColValue);
         assertTrue(listValue.getValuesList().isEmpty(), () -> "List is not empty: " + listValue);
+    }
+
+    @Test
+    void stripsTrailingZeroes() {
+        IMessage message = createMessage("test");
+        message.addField("bd", new BigDecimal("0.0000000"));
+        message.addField("bdCollection", List.of(new BigDecimal("0.00000000")));
+        Message protoMessage = new IMessageToProtoConverter(IMessageToProtoConverter.parametersBuilder().setStripTrailingZeros(true).build())
+                .toProtoMessage(message).build();
+        assertAll(
+                () -> {
+                    Value bd = protoMessage.getFieldsMap().get("bd");
+                    assertNotNull(bd, () -> "Missing field in " + protoMessage);
+                    assertEquals(getSimpleValue("0"), bd, () -> "Unexpected value: " + bd);
+                },
+                () -> {
+                    Value bd = protoMessage.getFieldsMap().get("bdCollection");
+                    assertNotNull(bd, () -> "Missing field in " + protoMessage);
+                    assertEquals(getListValue(getSimpleValue("0")), bd, () -> "Unexpected value: " + bd);
+                }
+        );
+    }
+
+    @Test
+    void convertsBigDecimalInPlainFormat() {
+        IMessage message = createMessage("test");
+        message.addField("bd", new BigDecimal("0.0000000"));
+        message.addField("bdCollection", List.of(new BigDecimal("0.00000000")));
+        Message protoMessage = new IMessageToProtoConverter()
+                .toProtoMessage(message).build();
+
+        assertAll(
+                () -> {
+                    Value bd = protoMessage.getFieldsMap().get("bd");
+                    assertNotNull(bd, () -> "Missing field in " + protoMessage);
+                    assertEquals("0.0000000", bd.getSimpleValue(), () -> "Unexpected value: " + bd);
+                },
+                () -> {
+                    Value bd = protoMessage.getFieldsMap().get("bdCollection");
+                    assertNotNull(bd, () -> "Missing field in " + protoMessage);
+                    assertEquals(getListValue(getSimpleValue("0.00000000")), bd, () -> "Unexpected value: " + bd);
+                }
+        );
+    }
+
+    private static IMessage createMessage(String name) {
+        return DefaultMessageFactory.getFactory().createMessage(name, "test");
     }
 }

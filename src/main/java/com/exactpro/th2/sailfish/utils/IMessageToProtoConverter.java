@@ -15,6 +15,9 @@
  ******************************************************************************/
 package com.exactpro.th2.sailfish.utils;
 
+import static java.util.Objects.requireNonNull;
+
+import java.math.BigDecimal;
 import java.util.List;
 
 import org.jetbrains.annotations.NotNull;
@@ -23,8 +26,19 @@ import com.exactpro.sf.common.messages.IMessage;
 import com.exactpro.th2.common.grpc.ListValue;
 import com.exactpro.th2.common.grpc.Message;
 import com.exactpro.th2.common.grpc.Value;
+import com.exactpro.th2.common.grpc.Value.Builder;
 
 public class IMessageToProtoConverter {
+    private final Parameters parameters;
+
+    public IMessageToProtoConverter() {
+        this(Parameters.DEFAULT);
+    }
+
+    public IMessageToProtoConverter(Parameters parameters) {
+        this.parameters = requireNonNull(parameters, "'Parameters' parameter");
+    }
+
     public Message.Builder toProtoMessage(IMessage message) {
         Message.Builder builder = Message.newBuilder();
         builder.getMetadataBuilder().setMessageType(message.getName());
@@ -45,7 +59,7 @@ public class IMessageToProtoConverter {
             ListValue listValue = convertToListValue(fieldValue);
             valueBuilder.setListValue(listValue);
         } else {
-            valueBuilder.setSimpleValue(fieldValue.toString());
+            addSimpleValue(fieldValue, valueBuilder);
         }
         return valueBuilder.build();
     }
@@ -62,10 +76,20 @@ public class IMessageToProtoConverter {
                     ));
         } else {
             fieldList.forEach(value -> listBuilder.addValues(
-                            Value.newBuilder().setSimpleValue(value.toString()).build()
+                            addSimpleValue(value, Value.newBuilder())
                     ));
         }
         return listBuilder.build();
+    }
+
+    private Builder addSimpleValue(Object fieldValue, Builder valueBuilder) {
+        if (fieldValue instanceof BigDecimal) {
+            BigDecimal bd = (BigDecimal)fieldValue;
+            valueBuilder.setSimpleValue((parameters.isStripTrailingZeros() ? bd.stripTrailingZeros() : bd).toPlainString());
+        } else {
+            valueBuilder.setSimpleValue(fieldValue.toString());
+        }
+        return valueBuilder;
     }
 
     private Message convertComplex(IMessage fieldValue) {
@@ -76,5 +100,38 @@ public class IMessageToProtoConverter {
             nestedMessageBuilder.putFields(fieldName, convertedValue);
         }
         return nestedMessageBuilder.build();
+    }
+
+    public static Parameters.Builder parametersBuilder() {
+        return new Parameters.Builder();
+    }
+
+    public static class Parameters {
+        public static final Parameters DEFAULT = parametersBuilder().build();
+        private final boolean stripTrailingZeros;
+
+        private Parameters(boolean stripTrailingZeros) {
+            this.stripTrailingZeros = stripTrailingZeros;
+        }
+
+        public boolean isStripTrailingZeros() {
+            return stripTrailingZeros;
+        }
+
+        public static class Builder {
+            private boolean stripTrailingZeros;
+
+            private Builder() {
+            }
+
+            public Builder setStripTrailingZeros(boolean stripTrailingZeros) {
+                this.stripTrailingZeros = stripTrailingZeros;
+                return this;
+            }
+
+            public Parameters build() {
+                return new Parameters(stripTrailingZeros);
+            }
+        }
     }
 }
