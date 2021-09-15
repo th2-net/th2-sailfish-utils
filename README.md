@@ -6,7 +6,12 @@ This library contains classes to convert messages from th2 to Sailfish format an
 
 ### 3.8.1
 
+#### Changed:
 + Migrated sailfish-core version from `3.2.1622` to `3.2.1676`
+
+#### Added:
++ Parameter for `ComparatorSettings`:
+  + **keepResultGroupOrder** - contain verification in order matches the actual message
 
 ### 3.8.0
 
