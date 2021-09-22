@@ -34,6 +34,7 @@ import com.exactpro.th2.common.grpc.FilterOperation;
 import com.exactpro.th2.common.grpc.Message;
 import com.exactpro.th2.common.grpc.MessageFilter;
 import com.exactpro.th2.common.grpc.RootMessageFilter;
+import com.exactpro.th2.common.grpc.SimpleFilter;
 import com.exactpro.th2.common.grpc.SimpleList;
 import com.exactpro.th2.common.grpc.ValueFilter;
 import com.exactpro.th2.sailfish.utils.factory.DefaultMessageFactoryProxy;
@@ -62,8 +63,11 @@ public class ImplementationIFilterTest extends AbstractConverterTest {
                 .setMessageType(MESSAGE_TYPE)
                 .setMessageFilter(MessageFilter.newBuilder()
                         .putFields("containFilter", ValueFilter.newBuilder()
-                                .setSimpleList(SimpleList.newBuilder()
-                                        .addAllSimpleValues(Arrays.asList("A", "B", "C")))
+                                .setSimpleFilter(SimpleFilter.newBuilder()
+                                        .setSimpleList(SimpleList.newBuilder()
+                                                .addAllSimpleValues(Arrays.asList("A", "B", "C"))
+                                                .build())
+                                        .build())
                                 .setOperation(operation)
                                 .build())
                         .build())
@@ -110,7 +114,9 @@ public class ImplementationIFilterTest extends AbstractConverterTest {
                 .setMessageType(MESSAGE_TYPE)
                 .setMessageFilter(MessageFilter.newBuilder()
                         .putFields("compareFilter", ValueFilter.newBuilder()
-                                .setSimpleFilter(filterValue)
+                                .setSimpleFilter(SimpleFilter.newBuilder()
+                                        .setValue(filterValue)
+                                        .build())
                                 .setOperation(operation)
                                 .build())
                         .build())
@@ -140,7 +146,9 @@ public class ImplementationIFilterTest extends AbstractConverterTest {
                 .setMessageType(MESSAGE_TYPE)
                 .setMessageFilter(MessageFilter.newBuilder()
                         .putFields("errorFilter", ValueFilter.newBuilder()
-                                .setSimpleFilter(first)
+                                .setSimpleFilter(SimpleFilter.newBuilder()
+                                        .setValue(first)
+                                        .build())
                                 .setOperation(operation)
                                 .build())
                         .build())
@@ -163,7 +171,9 @@ public class ImplementationIFilterTest extends AbstractConverterTest {
                 .setMessageType(MESSAGE_TYPE)
                 .setMessageFilter(MessageFilter.newBuilder()
                         .putFields("filterException", ValueFilter.newBuilder()
-                                .setSimpleFilter(first)
+                                .setSimpleFilter(SimpleFilter.newBuilder()
+                                .setValue(first)
+                                .build())
                                 .setOperation(FilterOperation.MORE)
                                 .build())
                         .build())

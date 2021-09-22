@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.List;
 import java.util.Set;
 
+import com.exactpro.th2.common.grpc.SimpleFilter;
 import com.exactpro.th2.sailfish.utils.factory.DefaultMessageFactoryProxy;
 import org.junit.jupiter.api.Test;
 
@@ -34,7 +35,6 @@ import com.exactpro.th2.common.grpc.FilterOperation;
 import com.exactpro.th2.common.grpc.Message;
 import com.exactpro.th2.common.grpc.Message.Builder;
 import com.exactpro.th2.common.grpc.MetadataFilter;
-import com.exactpro.th2.common.grpc.MetadataFilter.SimpleFilter;
 import com.exactpro.th2.common.grpc.Value;
 
 class ProtoToIMessageConverterWithoutDictionaryTest extends AbstractProtoToIMessageConverterTest {
