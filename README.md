@@ -5,7 +5,7 @@ This library contains classes to convert messages from th2 to Sailfish format an
 ## Release Notes
 
 ### 3.9.0
-+ Update th2-common version for new Filter SimpleList usage
++ Update th2-common version from `3.23.0` to `3.26.0` for new Filter SimpleList usage 
 
 ### 3.8.1
 
