@@ -68,7 +68,7 @@ import com.exactpro.th2.common.grpc.ListValueFilter;
 import com.exactpro.th2.common.grpc.Message;
 import com.exactpro.th2.common.grpc.MessageFilter;
 import com.exactpro.th2.common.grpc.MetadataFilter;
-import com.exactpro.th2.common.grpc.SimpleFilter;
+import com.exactpro.th2.common.grpc.MetadataFilter.SimpleFilter;
 import com.exactpro.th2.common.grpc.Value;
 import com.exactpro.th2.common.grpc.Value.KindCase;
 import com.exactpro.th2.common.grpc.ValueFilter;
@@ -171,7 +171,7 @@ public class ProtoToIMessageConverter {
         IMessage message = messageFactory.createMessage(dictionaryURI, messageName);
         for (Entry<String, SimpleFilter> filterEntry : filter.getPropertyFiltersMap().entrySet()) {
             SimpleFilter propertyFilter = filterEntry.getValue();
-            message.addField(filterEntry.getKey(), toSimpleFilter(propertyFilter.getOperation(), propertyFilter));
+            message.addField(filterEntry.getKey(), toSimpleFilter(propertyFilter.getOperation(), propertyFilter.getValue()));
         }
 
         logger.trace("Metadata filter converted to '{}': {}", messageName, message);
@@ -185,13 +185,19 @@ public class ProtoToIMessageConverter {
         if (value.hasMessageFilter()) {
             return fromProtoFilter(value.getMessageFilter(), fieldname);
         }
+        if (value.hasSimpleList()) {
+            if (value.getOperation() == FilterOperation.IN || value.getOperation() == FilterOperation.NOT_IN) {
+                return new ListContainFilter(value.getOperation(), value.getSimpleList().getSimpleValuesList());
+            }
+            throw new IllegalArgumentException(String.format("The operation doesn't match the value {%s}, {%s}", value.getOperation(), value.getSimpleList()));
+        }
         return toSimpleFilter(value.getOperation(), value.getSimpleFilter());
     }
 
-    private Object toSimpleFilter(FilterOperation operation, SimpleFilter simpleFilter) {
+    private Object toSimpleFilter(FilterOperation operation, String simpleFilter) {
         switch (operation) {
             case EQUAL:
-                return StaticUtil.simpleFilter(0, null, StringUtil.enclose(StringEscapeUtils.escapeJava(simpleFilter.getValue())));
+                return StaticUtil.simpleFilter(0, null, StringUtil.enclose(StringEscapeUtils.escapeJava(simpleFilter)));
             case NOT_EQUAL:
                 // Enclose value to single quotes isn't required for arguments
                 return StaticUtil.filter(0, null, "x != value", "value", simpleFilter);
@@ -199,25 +205,17 @@ public class ProtoToIMessageConverter {
                 return StaticUtil.nullFilter(0, null);
             case NOT_EMPTY:
                 return StaticUtil.notNullFilter(0, null);
-
-            case IN:
-            case NOT_IN:
-                if (simpleFilter.hasSimpleList()) {
-                    return new ListContainFilter(operation, simpleFilter.getSimpleList().getSimpleValuesList());
-                }
-                throw new IllegalArgumentException(String.format("Operations IN or NOT_IN require SimpleList instead of {%s}", simpleFilter.getValue()));
-
             case LIKE:
             case NOT_LIKE:
-                return new RegExFilter(operation, simpleFilter.getValue());
+                return new RegExFilter(operation, simpleFilter);
             case LESS:
             case NOT_LESS:
             case MORE:
             case NOT_MORE:
-                return new CompareFilter(operation, simpleFilter.getValue());
+                return new CompareFilter(operation, simpleFilter);
             case WILDCARD:
             case NOT_WILDCARD:
-                return new WildcardFilter(operation, simpleFilter.getValue());
+                return new WildcardFilter(operation, simpleFilter);
             default:
                 throw new IllegalArgumentException("Unsupported operation " + operation);
         }

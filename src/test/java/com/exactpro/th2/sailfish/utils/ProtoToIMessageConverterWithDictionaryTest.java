@@ -30,7 +30,6 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Map;
 
-import com.exactpro.th2.common.grpc.SimpleFilter;
 import com.exactpro.th2.sailfish.utils.factory.DefaultMessageFactoryProxy;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -122,9 +121,7 @@ class ProtoToIMessageConverterWithDictionaryTest extends AbstractProtoToIMessage
             MessageFilter filter = MessageFilter.newBuilder()
                     .putFields("field", ValueFilter.newBuilder()
                             .setOperation(FilterOperation.EQUAL)
-                            .setSimpleFilter(SimpleFilter.newBuilder()
-                                    .setValue("\"badly quoted string`'")
-                                    .build())
+                            .setSimpleFilter("\"badly quoted string`'")
                             .build())
                     .build();
 
