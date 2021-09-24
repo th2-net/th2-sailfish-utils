@@ -20,7 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
@@ -28,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import com.exactpro.sf.aml.scriptutil.StaticUtil.IFilter;
 import com.exactpro.sf.common.messages.IMessage;
@@ -138,7 +138,7 @@ class ProtoToIMessageConverterWithoutDictionaryTest extends AbstractProtoToIMess
     }
 
     private static List<Arguments> inOperationFilter() {
-        return Arrays.asList(
+        return List.of(
                 Arguments.of("A", StatusType.PASSED, FilterOperation.IN),
                 Arguments.of("D", StatusType.FAILED, FilterOperation.IN),
                 Arguments.of("D", StatusType.PASSED, FilterOperation.NOT_IN),
@@ -153,7 +153,7 @@ class ProtoToIMessageConverterWithoutDictionaryTest extends AbstractProtoToIMess
                 .putPropertyFilters("prop1", SimpleFilter.newBuilder()
                         .setOperation(operation)
                         .setSimpleList(SimpleList.newBuilder()
-                                .addAllSimpleValues(Arrays.asList("A", "B", "C")))
+                                .addAllSimpleValues(List.of("A", "B", "C")))
                         .build())
                 .build();
         Message actual = createMessageBuilder("Metadata")
@@ -170,4 +170,32 @@ class ProtoToIMessageConverterWithoutDictionaryTest extends AbstractProtoToIMess
         Object prop1 = message.getField("prop1");
         assertTrue(prop1 instanceof IOperationFilter, () -> "Unexpected type: " + prop1.getClass());
     }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"1", "abc"})
+    void testConvertsMetadataFilterWithSimpleValueException(String value) {
+        MetadataFilter metadataFilter = MetadataFilter.newBuilder()
+                .putPropertyFilters("prop1", SimpleFilter.newBuilder()
+                        .setOperation(FilterOperation.IN)
+                        .setValue(value)
+                        .build())
+                .build();
+
+        assertThrows(IllegalArgumentException.class, () -> converter.fromMetadataFilter(metadataFilter, "Metadata"));
+    }
+
+    @Test
+    void testConvertsMetadataFilterWithListException() {
+        MetadataFilter metadataFilter = MetadataFilter.newBuilder()
+                .putPropertyFilters("prop1", SimpleFilter.newBuilder()
+                        .setOperation(FilterOperation.EQUAL)
+                        .setSimpleList(SimpleList.newBuilder()
+                                .addAllSimpleValues(List.of("A", "B"))
+                                .build())
+                        .build())
+                .build();
+
+        assertThrows(IllegalArgumentException.class, () -> converter.fromMetadataFilter(metadataFilter, "Metadata"));
+    }
+
 }
