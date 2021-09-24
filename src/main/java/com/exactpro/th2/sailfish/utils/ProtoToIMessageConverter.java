@@ -172,11 +172,10 @@ public class ProtoToIMessageConverter {
         for (Entry<String, SimpleFilter> filterEntry : filter.getPropertyFiltersMap().entrySet()) {
             SimpleFilter propertyFilter = filterEntry.getValue();
             if (propertyFilter.hasSimpleList()) {
-                if (propertyFilter.getOperation() == FilterOperation.IN || propertyFilter.getOperation() == FilterOperation.NOT_IN) {
-                    message.addField(filterEntry.getKey(), new ListContainFilter(propertyFilter.getOperation(), propertyFilter.getSimpleList().getSimpleValuesList()));
-                } else {
+                if (propertyFilter.getOperation() != FilterOperation.IN && propertyFilter.getOperation() != FilterOperation.NOT_IN) {
                     throw new IllegalArgumentException(String.format("The operation doesn't match the values {%s}, {%s}", propertyFilter.getOperation(), propertyFilter.getSimpleList()));
                 }
+                message.addField(filterEntry.getKey(), new ListContainFilter(propertyFilter.getOperation(), propertyFilter.getSimpleList().getSimpleValuesList()));
             } else {
                 message.addField(filterEntry.getKey(), toSimpleFilter(propertyFilter.getOperation(), propertyFilter.getValue()));
             }
