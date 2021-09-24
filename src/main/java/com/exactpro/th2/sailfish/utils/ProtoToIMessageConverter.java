@@ -171,7 +171,14 @@ public class ProtoToIMessageConverter {
         IMessage message = messageFactory.createMessage(dictionaryURI, messageName);
         for (Entry<String, SimpleFilter> filterEntry : filter.getPropertyFiltersMap().entrySet()) {
             SimpleFilter propertyFilter = filterEntry.getValue();
-            message.addField(filterEntry.getKey(), toSimpleFilter(propertyFilter.getOperation(), propertyFilter.getValue()));
+            if (propertyFilter.hasSimpleList()) {
+                if (propertyFilter.getOperation() != FilterOperation.IN && propertyFilter.getOperation() != FilterOperation.NOT_IN) {
+                    throw new IllegalArgumentException(String.format("The operation doesn't match the values {%s}, {%s}", propertyFilter.getOperation(), propertyFilter.getSimpleList()));
+                }
+                message.addField(filterEntry.getKey(), new ListContainFilter(propertyFilter.getOperation(), propertyFilter.getSimpleList().getSimpleValuesList()));
+            } else {
+                message.addField(filterEntry.getKey(), toSimpleFilter(propertyFilter.getOperation(), propertyFilter.getValue()));
+            }
         }
 
         logger.trace("Metadata filter converted to '{}': {}", messageName, message);
@@ -189,7 +196,7 @@ public class ProtoToIMessageConverter {
             if (value.getOperation() == FilterOperation.IN || value.getOperation() == FilterOperation.NOT_IN) {
                 return new ListContainFilter(value.getOperation(), value.getSimpleList().getSimpleValuesList());
             }
-            throw new IllegalArgumentException(String.format("The operation doesn't match the value {%s}, {%s}", value.getOperation(), value.getSimpleList()));
+            throw new IllegalArgumentException(String.format("The operation doesn't match the values {%s}, {%s}", value.getOperation(), value.getSimpleList()));
         }
         return toSimpleFilter(value.getOperation(), value.getSimpleFilter());
     }

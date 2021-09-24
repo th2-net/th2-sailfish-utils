@@ -15,7 +15,6 @@
  */
 package com.exactpro.th2.sailfish.utils;
 
-import java.util.Arrays;
 import java.util.List;
 
 import org.junit.jupiter.api.Assertions;
@@ -47,7 +46,7 @@ public class ImplementationIFilterTest extends AbstractConverterTest {
     );
 
     private static List<Arguments> inOperationFilter() {
-        return Arrays.asList(
+        return List.of(
                 Arguments.of("A", StatusType.PASSED, FilterOperation.IN),
                 Arguments.of("D", StatusType.FAILED, FilterOperation.IN),
                 Arguments.of("D", StatusType.PASSED, FilterOperation.NOT_IN),
@@ -63,7 +62,7 @@ public class ImplementationIFilterTest extends AbstractConverterTest {
                 .setMessageFilter(MessageFilter.newBuilder()
                         .putFields("containFilter", ValueFilter.newBuilder()
                                 .setSimpleList(SimpleList.newBuilder()
-                                        .addAllSimpleValues(Arrays.asList("A", "B", "C")))
+                                        .addAllSimpleValues(List.of("A", "B", "C")))
                                 .setOperation(operation)
                                 .build())
                         .build())
@@ -79,7 +78,7 @@ public class ImplementationIFilterTest extends AbstractConverterTest {
     }
 
     private static List<Arguments> twoSimpleValuesFilterOperation() {
-        return Arrays.asList(
+        return List.of(
                 Arguments.of("10.1", "11", StatusType.PASSED, FilterOperation.MORE),
                 Arguments.of("2007-12-03T10:15:30", "2007-12-03T10:15:30", StatusType.FAILED, FilterOperation.MORE),
                 Arguments.of("10.2", "10.2", StatusType.PASSED, FilterOperation.NOT_MORE),
@@ -126,7 +125,7 @@ public class ImplementationIFilterTest extends AbstractConverterTest {
     }
 
     private static List<Arguments> filterError() {
-        return Arrays.asList(
+        return List.of(
                 Arguments.of("10.1", "10,2", StatusType.FAILED, FilterOperation.LESS, "Failed to parse value to Number. Value = 10,2"),
                 Arguments.of("2007-12-03T10:15:30", "2007-12-03T10-15-30", StatusType.FAILED, FilterOperation.MORE, "Failed to parse value to Date. Value = 2007-12-03T10-15-30"),
                 Arguments.of("2007-12-03", "2007-12-03T10:15:30", StatusType.FAILED, FilterOperation.NOT_MORE, "Failed to compare Temporal values {2007-12-03T10:15:30}, {2007-12-03}")
