@@ -25,49 +25,49 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 public class FilterUtils {
-	public static final String DEFAULT_DECIMAL_SEPARATOR = String.valueOf(DecimalFormatSymbols.getInstance().getDecimalSeparator());
+    public static final String DEFAULT_DECIMAL_SEPARATOR = String.valueOf(DecimalFormatSymbols.getInstance().getDecimalSeparator());
 
 
-	public static Comparable<?> convertNumberValue(String value) {
-		if (value.contains(DEFAULT_DECIMAL_SEPARATOR)) {
-			return new BigDecimal(value);
-		}
-		return Long.parseLong(value);
-	}
+    public static Comparable<?> convertNumberValue(String value) {
+        if (value.contains(DEFAULT_DECIMAL_SEPARATOR)) {
+            return new BigDecimal(value);
+        }
+        return Long.parseLong(value);
+    }
 
-	@Nullable
-	public static Comparable<?> convertNumberValue(Object value) {
-		if (value instanceof String) {
-			return convertNumberValue((String) value);
-		} else if (value instanceof BigDecimal) {
-			return (BigDecimal) value;
-		} else if (value instanceof Long) {
-			return (Long) value;
-		}
-		return null;
-	}
+    @Nullable
+    public static Comparable<?> convertNumberValue(Object value) {
+        if (value instanceof String) {
+            return convertNumberValue((String) value);
+        } else if (value instanceof BigDecimal) {
+            return (BigDecimal) value;
+        } else if (value instanceof Long) {
+            return (Long) value;
+        }
+        return null;
+    }
 
-	public static Comparable<?> convertDateValue(String value) {
-		if (value.contains(":")) {
-			if (value.contains("-")) {
-				return LocalDateTime.parse(value);
-			}
-			return LocalTime.parse(value);
-		}
-		return LocalDate.parse(value);
-	}
+    public static Comparable<?> convertDateValue(String value) {
+        if (value.contains(":")) {
+            if (value.contains("-")) {
+                return LocalDateTime.parse(value);
+            }
+            return LocalTime.parse(value);
+        }
+        return LocalDate.parse(value);
+    }
 
-	@Nullable
-	public static Comparable<?> convertDateValue(Object value) {
-		if (value instanceof String) {
-			return convertDateValue((String) value);
-		} else if (value instanceof LocalDateTime) {
-			return (LocalDateTime) value;
-		} else if (value instanceof LocalTime) {
-			return (LocalTime) value;
-		} else if (value instanceof LocalDate) {
-			return (LocalDate) value;
-		}
-		return null;
-	}
+    @Nullable
+    public static Comparable<?> convertDateValue(Object value) {
+        if (value instanceof String) {
+            return convertDateValue((String) value);
+        } else if (value instanceof LocalDateTime) {
+            return (LocalDateTime) value;
+        } else if (value instanceof LocalTime) {
+            return (LocalTime) value;
+        } else if (value instanceof LocalDate) {
+            return (LocalDate) value;
+        }
+        return null;
+    }
 }

@@ -26,43 +26,45 @@ import java.util.Objects;
 
 public abstract class AbstractFilterWithPrecision implements IOperationFilter {
 
-	protected final Comparable<?> value;
-	protected final FilterSettings filterSettings;
+    protected final Comparable<?> value;
+    protected final FilterSettings filterSettings;
 
 
-	public AbstractFilterWithPrecision(@NotNull String simpleFilter, @NotNull FilterSettings filterSettings) {
-		this.value = Objects.requireNonNull(convertValue(simpleFilter), "Value cannot be converted or null");
-		this.filterSettings = Objects.requireNonNull(filterSettings, "Filter settings cannot be null");
-	}
+    public AbstractFilterWithPrecision(@NotNull String simpleFilter, @NotNull FilterSettings filterSettings) {
+        this.value = Objects.requireNonNull(convertValue(simpleFilter), "Value cannot be converted or null");
+        this.filterSettings = Objects.requireNonNull(filterSettings, "Filter settings cannot be null");
+    }
 
 
-	@Override
-	public ExpressionResult validate(Object value) throws RuntimeException {
-		Comparable<?> actualValue = Objects.requireNonNull(convertValue(value), "Actual value cannot be converted or null");
-		return ExpressionResult.create(compareValues(actualValue, this.value));
-	}
+    @Override
+    public ExpressionResult validate(Object value) throws RuntimeException {
+        Comparable<?> actualValue = Objects.requireNonNull(convertValue(value), "Actual value cannot be converted or null");
+        return ExpressionResult.create(compareValues(actualValue, this.value));
+    }
 
-	@Override
-	public String getCondition() {
-		return "=" + getValue();
-	}
+    @Override
+    public String getCondition() {
+        return "=" + getValue();
+    }
 
-	@Override
-	public String getCondition(Object value) {
-		return value + " " +  getCondition() + " " + getValue();
-	}
+    @Override
+    public String getCondition(Object value) {
+        return value + " (±" + getPrecision() + ")" +  getCondition() + " " + getValue();
+    }
 
-	@Override
-	public Object getValue() throws MvelException {
-		return value;
-	}
+    @Override
+    public Object getValue() throws MvelException {
+        return value;
+    }
 
-	@Override
-	public boolean hasValue() {
-		return true;
-	}
+    @Override
+    public boolean hasValue() {
+        return true;
+    }
 
-	protected abstract Comparable<?> convertValue(Object value);
-	
-	protected abstract boolean compareValues(Comparable<?> first, Comparable<?> second);
+    protected abstract Comparable<?> convertValue(Object value);
+
+    protected abstract boolean compareValues(Comparable<?> first, Comparable<?> second);
+
+    protected abstract String getPrecision();
 }

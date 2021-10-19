@@ -27,38 +27,49 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.Temporal;
+import java.util.regex.Pattern;
 
 public class TimeFilterWithPrecision extends AbstractFilterWithPrecision {
+    
+    private static final Pattern DEFAULT_TIME_PRECISION_REGEX = Pattern.compile("(\\d[HMS])(?!$)");
 
-	public TimeFilterWithPrecision(@NotNull String simpleFilter, @NotNull FilterSettings filterSettings) {
-		super(simpleFilter, filterSettings);
-	}
+    public TimeFilterWithPrecision(@NotNull String simpleFilter, @NotNull FilterSettings filterSettings) {
+        super(simpleFilter, filterSettings);
+    }
 
-	@Override
-	public FilterOperation getOperation() {
-		return FilterOperation.EQ_TIME_PRECISION;
-	}
+    @Override
+    public FilterOperation getOperation() {
+        return FilterOperation.EQ_TIME_PRECISION;
+    }
 
 
-	@Override
-	protected Comparable<?> convertValue(Object value) {
-		try {
-			return FilterUtils.convertDateValue(value);
-		} catch (DateTimeParseException ex) {
-			throw new IllegalArgumentException("Failed to parse value to Date. Value = " + value, ex);
-		}
-	}
+    @Override
+    protected Comparable<?> convertValue(Object value) {
+        try {
+            return FilterUtils.convertDateValue(value);
+        } catch (DateTimeParseException ex) {
+            throw new IllegalArgumentException("Failed to parse value to Date. Value = " + value, ex);
+        }
+    }
 
-	@Override
-	protected boolean compareValues(Comparable<?> first, Comparable<?> second) {
-		if (first.getClass() == second.getClass()) {
-			if (first instanceof LocalDate || first instanceof LocalDateTime || first instanceof LocalTime) {
-				return Duration.between((Temporal) first, (Temporal) second)
-						.abs()
-						.compareTo(filterSettings.getTimePrecision()) <= 0;
-			}
-		}
+    @Override
+    protected boolean compareValues(Comparable<?> first, Comparable<?> second) {
+        if (first.getClass() == second.getClass()) {
+            if (first instanceof LocalDate || first instanceof LocalDateTime || first instanceof LocalTime) {
+                return Duration.between((Temporal) first, (Temporal) second)
+                        .abs()
+                        .compareTo(filterSettings.getTimePrecision()) <= 0;
+            }
+        }
 
-		throw new IllegalArgumentException(String.format("Failed to compare values {%s}, {%s} because it has an invalid types %s, %s", first, second, first.getClass(), second.getClass()));
-	}
+        throw new IllegalArgumentException(String.format("Failed to compare values {%s}, {%s} because it has an invalid types %s, %s", first, second, first.getClass(), second.getClass()));
+    }
+
+    @Override
+    protected String getPrecision() {
+        String precisionAsString = filterSettings.getTimePrecision().toString().substring(2);
+        return DEFAULT_TIME_PRECISION_REGEX.matcher(precisionAsString)
+                .replaceAll("$1 ")
+                .toLowerCase();
+    }
 }

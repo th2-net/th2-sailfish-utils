@@ -24,39 +24,25 @@ import java.util.Objects;
 
 public class FilterSettings {
 
-	public static final FilterSettings DEFAULT_FILTER = new FilterSettings(0, Duration.ofSeconds(0L, 0L));
+    public static final FilterSettings DEFAULT_FILTER = new FilterSettings();
 
-	private double decimalPrecision;
-	private Duration timePrecision;
-
-
-	public FilterSettings() {
-	}
-
-	public FilterSettings(double decimalPrecision, @NotNull Duration timePrecision) {
-		this.decimalPrecision = decimalPrecision;
-		this.timePrecision = validateTimePrecision(timePrecision);
-	}
+    private double decimalPrecision;
+    private Duration timePrecision = Duration.ofSeconds(0L, 0L);
 
 
-	public void setDecimalPrecision(double decimalPrecision) {
-		this.decimalPrecision = decimalPrecision;
-	}
+    public void setDecimalPrecision(double decimalPrecision) {
+        this.decimalPrecision = decimalPrecision;
+    }
 
-	public double getDecimalPrecision() {
-		return decimalPrecision;
-	}
+    public double getDecimalPrecision() {
+        return decimalPrecision;
+    }
 
-	public void setTimePrecision(@NotNull Duration timePrecision) {
-		this.timePrecision = validateTimePrecision(timePrecision);
-	}
+    public void setTimePrecision(@NotNull Duration timePrecision) {
+        this.timePrecision = Objects.requireNonNull(timePrecision, "Time precision cannot be null");
+    }
 
-	public Duration getTimePrecision() {
-		return timePrecision;
-	}
-
-
-	private Duration validateTimePrecision(@NotNull Duration timePrecision) {
-		return Objects.requireNonNull(timePrecision, "Time precision cannot be null");
-	}
+    public Duration getTimePrecision() {
+        return timePrecision;
+    }
 }

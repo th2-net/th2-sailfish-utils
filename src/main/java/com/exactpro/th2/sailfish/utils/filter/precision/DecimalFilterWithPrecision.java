@@ -24,41 +24,46 @@ import java.math.BigDecimal;
 
 public class DecimalFilterWithPrecision extends AbstractFilterWithPrecision {
 
-	public DecimalFilterWithPrecision(@NotNull String simpleFilter, @NotNull FilterSettings filterSettings) {
-		super(simpleFilter, filterSettings);
-	}
+    public DecimalFilterWithPrecision(@NotNull String simpleFilter, @NotNull FilterSettings filterSettings) {
+        super(simpleFilter, filterSettings);
+    }
 
-	@Override
-	public FilterOperation getOperation() {
-		return FilterOperation.EQ_DECIMAL_PRECISION;
-	}
+    @Override
+    public FilterOperation getOperation() {
+        return FilterOperation.EQ_DECIMAL_PRECISION;
+    }
 
-	@Override
-	protected Comparable<?> convertValue(Object value) {
-		try {
-			if (value instanceof String) {
-				return new BigDecimal((String) value);
-			} else if (value instanceof BigDecimal) {
-				return (BigDecimal) value;
-			} else if (value instanceof Float) {
-				return BigDecimal.valueOf((Float) value);
-			} else if (value instanceof Double) {
-				return BigDecimal.valueOf((Double) value);
-			} else if (value instanceof Short) {
-				return new BigDecimal((Short) value);
-			} else if (value instanceof Integer) {
-				return new BigDecimal((Integer) value);
-			}
-			throw new IllegalArgumentException("Value cannot be converted to decimal value. Value = " + value);
-		} catch (NumberFormatException e) {
-			throw new IllegalArgumentException("Failed to parse value to Number. Value = " + value, e);
-		}
-	}
+    @Override
+    protected Comparable<?> convertValue(Object value) {
+        try {
+            if (value instanceof String) {
+                return new BigDecimal((String) value);
+            } else if (value instanceof BigDecimal) {
+                return (BigDecimal) value;
+            } else if (value instanceof Float) {
+                return BigDecimal.valueOf((Float) value);
+            } else if (value instanceof Double) {
+                return BigDecimal.valueOf((Double) value);
+            } else if (value instanceof Short) {
+                return new BigDecimal((Short) value);
+            } else if (value instanceof Integer) {
+                return new BigDecimal((Integer) value);
+            }
+            throw new IllegalArgumentException("Value cannot be converted to decimal value. Value = " + value);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Failed to parse value to Number. Value = " + value, e);
+        }
+    }
 
-	@Override
-	protected boolean compareValues(Comparable<?> first, Comparable<?> second) {
-		return ((BigDecimal) first).subtract((BigDecimal) second)
-				.abs()
-				.compareTo(BigDecimal.valueOf(filterSettings.getDecimalPrecision())) <= 0;
-	}
+    @Override
+    protected boolean compareValues(Comparable<?> first, Comparable<?> second) {
+        return ((BigDecimal) first).subtract((BigDecimal) second)
+                .abs()
+                .compareTo(BigDecimal.valueOf(filterSettings.getDecimalPrecision())) <= 0;
+    }
+
+    @Override
+    protected String getPrecision() {
+        return String.valueOf(filterSettings.getDecimalPrecision());
+    }
 }

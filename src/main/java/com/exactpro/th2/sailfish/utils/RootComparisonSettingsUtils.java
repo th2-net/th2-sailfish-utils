@@ -20,15 +20,15 @@ import com.exactpro.th2.common.grpc.RootComparisonSettings;
 import com.exactpro.th2.common.message.MessageUtils;
 
 public class RootComparisonSettingsUtils {
-	public static FilterSettings convertToFilterSettings(RootComparisonSettings rootComparisonSettings) {
-		var filterSettings = new FilterSettings();
-		if (rootComparisonSettings.hasTimePrecision()) {
-			filterSettings.setTimePrecision(MessageUtils.toJavaDuration(rootComparisonSettings.getTimePrecision()));
-		}
-		if (!rootComparisonSettings.getDecimalPrecision().isBlank()) {
-			filterSettings.setDecimalPrecision(Double.parseDouble(rootComparisonSettings.getDecimalPrecision()));
-		}
+    public static FilterSettings convertToFilterSettings(RootComparisonSettings rootComparisonSettings) {
+        var filterSettings = new FilterSettings();
+        if (rootComparisonSettings.hasTimePrecision()) {
+            filterSettings.setTimePrecision(MessageUtils.toJavaDuration(rootComparisonSettings.getTimePrecision()));
+        }
+        if (!rootComparisonSettings.getDecimalPrecision().isBlank()) {
+            filterSettings.setDecimalPrecision(Double.parseDouble(rootComparisonSettings.getDecimalPrecision()));
+        }
 
-		return filterSettings;
-	}
+        return filterSettings;
+    }
 }
