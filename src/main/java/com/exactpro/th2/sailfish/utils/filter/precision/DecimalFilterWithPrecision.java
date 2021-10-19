@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,24 +16,16 @@
 
 package com.exactpro.th2.sailfish.utils.filter.precision;
 
-import com.exactpro.sf.aml.scriptutil.ExpressionResult;
-import com.exactpro.sf.aml.scriptutil.MvelException;
 import com.exactpro.th2.common.grpc.FilterOperation;
 import com.exactpro.th2.sailfish.utils.FilterSettings;
-import com.exactpro.th2.sailfish.utils.filter.IOperationFilter;
-import com.exactpro.th2.sailfish.utils.filter.util.FilterUtils;
+import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
-import java.util.Objects;
 
-public class DecimalFilterWithPrecision implements IOperationFilter {
-	private final Comparable<?> value;
-	private final FilterSettings filterSettings;
+public class DecimalFilterWithPrecision extends AbstractFilterWithPrecision {
 
-
-	public DecimalFilterWithPrecision(String simpleFilter, FilterSettings filterSettings) {
-		this.value = convertValue(simpleFilter);
-		this.filterSettings = filterSettings;
+	public DecimalFilterWithPrecision(@NotNull String simpleFilter, @NotNull FilterSettings filterSettings) {
+		super(simpleFilter, filterSettings);
 	}
 
 	@Override
@@ -42,53 +34,31 @@ public class DecimalFilterWithPrecision implements IOperationFilter {
 	}
 
 	@Override
-	public ExpressionResult validate(Object value) throws RuntimeException {
-		Comparable<?> comparableValue = Objects.requireNonNull(convertValue(value));
-		return ExpressionResult.create(compareValues(comparableValue, this.value));
-	}
-
-	@Override
-	public String getCondition() {
-		return "=" + getValue();
-	}
-
-	@Override
-	public String getCondition(Object value) {
-		return value + " " +  getCondition() + " " + getValue();
-	}
-
-	@Override
-	public Object getValue() throws MvelException {
-		return value;
-	}
-
-	@Override
-	public boolean hasValue() {
-		return true;
-	}
-
-
-	private boolean compareValues(Comparable<?> first, Comparable<?> second) {
-		if (first.getClass() == second.getClass()) {
-			if (first instanceof BigDecimal) {
-				return ((BigDecimal) first).subtract((BigDecimal) second)
-						.abs()
-						.compareTo(BigDecimal.valueOf(filterSettings.getDecimalPrecision())) <= 0;
-			}
-			if (first instanceof Double) {
-				return Math.abs((Double) first - (Double) second) <= filterSettings.getDecimalPrecision();
-			}
-		}
-
-		throw new IllegalArgumentException(String.format("Failed to compare values {%s}, {%s} because it has an invalid types %s, %s", first, second, first.getClass(), second.getClass()));
-	}
-
-
-	private static Comparable<?> convertValue(Object value) {
+	protected Comparable<?> convertValue(Object value) {
 		try {
-			return FilterUtils.convertValue(value);
+			if (value instanceof String) {
+				return new BigDecimal((String) value);
+			} else if (value instanceof BigDecimal) {
+				return (BigDecimal) value;
+			} else if (value instanceof Float) {
+				return BigDecimal.valueOf((Float) value);
+			} else if (value instanceof Double) {
+				return BigDecimal.valueOf((Double) value);
+			} else if (value instanceof Short) {
+				return new BigDecimal((Short) value);
+			} else if (value instanceof Integer) {
+				return new BigDecimal((Integer) value);
+			}
+			throw new IllegalArgumentException("Value cannot be converted to decimal value. Value = " + value);
 		} catch (NumberFormatException e) {
 			throw new IllegalArgumentException("Failed to parse value to Number. Value = " + value, e);
 		}
+	}
+
+	@Override
+	protected boolean compareValues(Comparable<?> first, Comparable<?> second) {
+		return ((BigDecimal) first).subtract((BigDecimal) second)
+				.abs()
+				.compareTo(BigDecimal.valueOf(filterSettings.getDecimalPrecision())) <= 0;
 	}
 }

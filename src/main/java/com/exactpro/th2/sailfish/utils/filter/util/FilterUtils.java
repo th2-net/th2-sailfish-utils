@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,21 +25,24 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 public class FilterUtils {
-	public static Comparable<?> convertValue(String value) {
-		if (value.contains(String.valueOf(DecimalFormatSymbols.getInstance().getDecimalSeparator()))) {
+	public static final String DEFAULT_DECIMAL_SEPARATOR = String.valueOf(DecimalFormatSymbols.getInstance().getDecimalSeparator());
+
+
+	public static Comparable<?> convertNumberValue(String value) {
+		if (value.contains(DEFAULT_DECIMAL_SEPARATOR)) {
 			return new BigDecimal(value);
 		}
 		return Long.parseLong(value);
 	}
 
 	@Nullable
-	public static Comparable<?> convertValue(Object value) {
+	public static Comparable<?> convertNumberValue(Object value) {
 		if (value instanceof String) {
-			return convertValue((String) value);
+			return convertNumberValue((String) value);
 		} else if (value instanceof BigDecimal) {
 			return (BigDecimal) value;
-		} else if (value instanceof Double) {
-			return (Double) value;
+		} else if (value instanceof Long) {
+			return (Long) value;
 		}
 		return null;
 	}

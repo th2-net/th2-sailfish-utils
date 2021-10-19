@@ -167,7 +167,7 @@ public class ProtoToIMessageConverter {
     }
 
     public IMessage fromProtoFilter(MessageFilter messageFilter, String messageName) {
-        return fromProtoFilter(messageFilter, null, messageName);
+        return fromProtoFilter(messageFilter, FilterSettings.DEFAULT_FILTER, messageName);
     }
 
     public IMessage fromMetadataFilter(MetadataFilter filter, FilterSettings filterSettings, String messageName) {
@@ -192,7 +192,7 @@ public class ProtoToIMessageConverter {
     }
 
     public IMessage fromMetadataFilter(MetadataFilter filter, String messageName) {
-        return fromMetadataFilter(filter, null, messageName);
+        return fromMetadataFilter(filter, FilterSettings.DEFAULT_FILTER, messageName);
     }
 
     private Object traverseFilterField(String fieldname, ValueFilter value, FilterSettings filterSettings) {

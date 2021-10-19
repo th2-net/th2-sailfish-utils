@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,25 +14,21 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.sailfish.utils.util;
+package com.exactpro.th2.sailfish.utils;
 
 import com.exactpro.th2.common.grpc.RootComparisonSettings;
-import com.exactpro.th2.sailfish.utils.FilterSettings;
-
-import java.time.Duration;
+import com.exactpro.th2.common.message.MessageUtils;
 
 public class RootComparisonSettingsUtils {
 	public static FilterSettings convertToFilterSettings(RootComparisonSettings rootComparisonSettings) {
 		var filterSettings = new FilterSettings();
 		if (rootComparisonSettings.hasTimePrecision()) {
-			filterSettings.setTimePrecision(convert(rootComparisonSettings.getTimePrecision()));
+			filterSettings.setTimePrecision(MessageUtils.toJavaDuration(rootComparisonSettings.getTimePrecision()));
 		}
-		filterSettings.setDecimalPrecision(rootComparisonSettings.getDecimalPrecision());
+		if (!rootComparisonSettings.getDecimalPrecision().isBlank()) {
+			filterSettings.setDecimalPrecision(Double.parseDouble(rootComparisonSettings.getDecimalPrecision()));
+		}
 
 		return filterSettings;
-	}
-
-	public static Duration convert(com.google.protobuf.Duration duration) {
-		return Duration.ofSeconds(duration.getSeconds(), duration.getNanos());
 	}
 }

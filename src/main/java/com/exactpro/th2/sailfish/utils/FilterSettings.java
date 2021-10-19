@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,20 +17,27 @@
 package com.exactpro.th2.sailfish.utils;
 
 
+import org.jetbrains.annotations.NotNull;
+
 import java.time.Duration;
+import java.util.Objects;
 
 public class FilterSettings {
+
+	public static final FilterSettings DEFAULT_FILTER = new FilterSettings(0, Duration.ofSeconds(0L, 0L));
 
 	private double decimalPrecision;
 	private Duration timePrecision;
 
 
-	public void setDecimalPrecision(String decimalPrecision) {
-		if (decimalPrecision.isBlank()) {
-			return;
-		}
-		this.decimalPrecision = Double.parseDouble(decimalPrecision);
+	public FilterSettings() {
 	}
+
+	public FilterSettings(double decimalPrecision, @NotNull Duration timePrecision) {
+		this.decimalPrecision = decimalPrecision;
+		this.timePrecision = validateTimePrecision(timePrecision);
+	}
+
 
 	public void setDecimalPrecision(double decimalPrecision) {
 		this.decimalPrecision = decimalPrecision;
@@ -40,11 +47,16 @@ public class FilterSettings {
 		return decimalPrecision;
 	}
 
-	public void setTimePrecision(Duration timePrecision) {
-		this.timePrecision = timePrecision;
+	public void setTimePrecision(@NotNull Duration timePrecision) {
+		this.timePrecision = validateTimePrecision(timePrecision);
 	}
 
 	public Duration getTimePrecision() {
 		return timePrecision;
+	}
+
+
+	private Duration validateTimePrecision(@NotNull Duration timePrecision) {
+		return Objects.requireNonNull(timePrecision, "Time precision cannot be null");
 	}
 }

@@ -38,7 +38,7 @@ public class CompareFilter implements IOperationFilter {
         Exception potentialException = null;
         Comparable<?> tmpValue = null;
         try {
-            tmpValue = FilterUtils.convertValue(value);
+            tmpValue = FilterUtils.convertNumberValue(value);
         } catch (NumberFormatException e) {
             potentialException = new IllegalArgumentException("Failed to parse value to Number. Value = " + value, e);
         }
@@ -80,7 +80,7 @@ public class CompareFilter implements IOperationFilter {
         Comparable<?> tmpValue;
         if (isNumber) {
             try {
-                tmpValue = FilterUtils.convertValue((String) value);
+                tmpValue = Objects.requireNonNull(FilterUtils.convertNumberValue(value));
             } catch (NumberFormatException e) {
                 throw new IllegalArgumentException("Failed to parse value to Number. Value = " + value, e);
             }

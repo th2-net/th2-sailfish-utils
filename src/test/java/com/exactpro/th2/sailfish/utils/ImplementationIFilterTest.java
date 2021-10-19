@@ -18,7 +18,6 @@ package com.exactpro.th2.sailfish.utils;
 import java.util.List;
 
 import com.exactpro.th2.common.grpc.RootComparisonSettings;
-import com.exactpro.th2.sailfish.utils.util.RootComparisonSettingsUtils;
 import com.google.protobuf.Duration;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -177,9 +176,15 @@ public class ImplementationIFilterTest extends AbstractConverterTest {
     private static List<Arguments> twoDecimalFilterOperationWithPrecision() {
         return List.of(
                 Arguments.of("10.0", "10.005", "0.005", StatusType.PASSED),
+                Arguments.of("10", "10.005", "0.005", StatusType.PASSED),
                 Arguments.of("10.0", "10.005", "5E-3", StatusType.PASSED),
                 Arguments.of("10.0", "10.006", "0.005", StatusType.FAILED),
-                Arguments.of("10.0", "10.006", "5E-3", StatusType.FAILED)
+                Arguments.of("10.0", "10.006", "5E-3", StatusType.FAILED),
+                Arguments.of("10", "10.005", "0.005", StatusType.PASSED),
+                Arguments.of("10", "10.005", "0.004", StatusType.FAILED),
+                Arguments.of("10.1", "10.005", "0.095", StatusType.PASSED),
+                Arguments.of("10.1", "10", "0", StatusType.FAILED),
+                Arguments.of("101E-1", "10005E-3", "95E-3", StatusType.PASSED)
         );
     }
 
@@ -257,15 +262,14 @@ public class ImplementationIFilterTest extends AbstractConverterTest {
         return MessageComparator.compare(actualIMessage, filterIMessage, new ComparatorSettings());
     }
     
-    private static Duration createDuration(long seconds, Integer nanos) {
-        var duration =  Duration.newBuilder().setSeconds(seconds);
-        if (nanos != null) {
-            duration.setNanos(nanos);
-        }
-        return duration.build();
+    private static Duration createDuration(long seconds, int nanos) {
+        return Duration.newBuilder()
+                .setSeconds(seconds)
+                .setNanos(nanos)
+                .build();
     }
 
     private static Duration createDuration(long seconds) {
-        return createDuration(seconds, null);
+        return createDuration(seconds, 0);
     }
 }
