@@ -31,6 +31,9 @@ public class FilterSettings {
 
 
     public void setDecimalPrecision(double decimalPrecision) {
+        if (decimalPrecision < 0) {
+            throw new IllegalArgumentException("Decimal precision cannot be negative");
+        }
         this.decimalPrecision = decimalPrecision;
     }
 
