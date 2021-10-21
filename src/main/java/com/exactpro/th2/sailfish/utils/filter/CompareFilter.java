@@ -16,7 +16,6 @@
 package com.exactpro.th2.sailfish.utils.filter;
 
 import java.math.BigDecimal;
-import java.text.DecimalFormatSymbols;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -25,6 +24,7 @@ import java.util.Objects;
 
 import com.exactpro.sf.aml.scriptutil.ExpressionResult;
 import com.exactpro.th2.common.grpc.FilterOperation;
+import com.exactpro.th2.sailfish.utils.filter.util.FilterUtils;
 
 public class CompareFilter implements IOperationFilter {
 
@@ -38,14 +38,14 @@ public class CompareFilter implements IOperationFilter {
         Exception potentialException = null;
         Comparable<?> tmpValue = null;
         try {
-            tmpValue = convertValue(value);
+            tmpValue = FilterUtils.convertNumberValue(value);
         } catch (NumberFormatException e) {
             potentialException = new IllegalArgumentException("Failed to parse value to Number. Value = " + value, e);
         }
         isNumber = tmpValue != null;
         if (!isNumber) {
             try {
-                tmpValue = convertDateValue(value);
+                tmpValue = FilterUtils.convertDateValue(value);
             } catch (DateTimeParseException ex) {
                 ex.addSuppressed(potentialException);
                 throw new IllegalArgumentException("Failed to parse value to Date. Value = " + value, ex);
@@ -80,13 +80,13 @@ public class CompareFilter implements IOperationFilter {
         Comparable<?> tmpValue;
         if (isNumber) {
             try {
-                tmpValue = convertValue((String)value);
+                tmpValue = Objects.requireNonNull(FilterUtils.convertNumberValue(value));
             } catch (NumberFormatException e) {
                 throw new IllegalArgumentException("Failed to parse value to Number. Value = " + value, e);
             }
         } else {
             try {
-                tmpValue = convertDateValue((String)value);
+                tmpValue = FilterUtils.convertDateValue((String) value);
             } catch (DateTimeParseException ex) {
                 throw new IllegalArgumentException("Failed to parse value to Date. Value = " + value, ex);
             }
@@ -114,23 +114,6 @@ public class CompareFilter implements IOperationFilter {
     @Override
     public boolean hasValue() {
         return true;
-    }
-
-    private static Comparable<?> convertValue(String value) {
-        if (value.contains(String.valueOf(DecimalFormatSymbols.getInstance().getDecimalSeparator()))) {
-            return new BigDecimal(value);
-        }
-        return Long.parseLong(value);
-    }
-
-    private static Comparable<?> convertDateValue(String value) {
-        if (value.contains(":")) {
-            if (value.contains("-")) {
-                return LocalDateTime.parse(value);
-            }
-            return LocalTime.parse(value);
-        }
-        return LocalDate.parse(value);
     }
 
     private boolean compareValues(Comparable<?> first, Comparable<?> second) {

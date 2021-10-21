@@ -28,6 +28,8 @@ import java.util.Map.Entry;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
+import com.exactpro.th2.sailfish.utils.filter.precision.DecimalFilterWithPrecision;
+import com.exactpro.th2.sailfish.utils.filter.precision.TimeFilterWithPrecision;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.text.StringEscapeUtils;
 import org.jetbrains.annotations.NotNull;
@@ -151,20 +153,24 @@ public class ProtoToIMessageConverter {
         return messageWrapper;
     }
 
-    public IMessage fromProtoFilter(MessageFilter messageFilter, String messageName) {
+    public IMessage fromProtoFilter(MessageFilter messageFilter, FilterSettings filterSettings, String messageName) {
         if (logger.isDebugEnabled()) {
             logger.debug("Converting filter {} as {}", shortDebugString(messageFilter), messageName);
         }
         IMessage message = messageFactory.createMessage(dictionaryURI, messageName);
         for (Entry<String, ValueFilter> filterEntry : messageFilter.getFieldsMap().entrySet()) {
-            message.addField(filterEntry.getKey(), traverseFilterField(filterEntry.getKey(), filterEntry.getValue()));
+            message.addField(filterEntry.getKey(), traverseFilterField(filterEntry.getKey(), filterEntry.getValue(), filterSettings));
         }
 
         logger.debug("Filter '{}' converted {}", messageName, message);
         return message;
     }
 
-    public IMessage fromMetadataFilter(MetadataFilter filter, String messageName) {
+    public IMessage fromProtoFilter(MessageFilter messageFilter, String messageName) {
+        return fromProtoFilter(messageFilter, FilterSettings.DEFAULT_FILTER, messageName);
+    }
+
+    public IMessage fromMetadataFilter(MetadataFilter filter, FilterSettings filterSettings, String messageName) {
         if (logger.isTraceEnabled()) {
             logger.trace("Converting filter {} as {}", shortDebugString(filter), messageName);
         }
@@ -177,7 +183,7 @@ public class ProtoToIMessageConverter {
                 }
                 message.addField(filterEntry.getKey(), new ListContainFilter(propertyFilter.getOperation(), propertyFilter.getSimpleList().getSimpleValuesList()));
             } else {
-                message.addField(filterEntry.getKey(), toSimpleFilter(propertyFilter.getOperation(), propertyFilter.getValue()));
+                message.addField(filterEntry.getKey(), toSimpleFilter(propertyFilter.getOperation(), propertyFilter.getValue(), filterSettings));
             }
         }
 
@@ -185,9 +191,13 @@ public class ProtoToIMessageConverter {
         return message;
     }
 
-    private Object traverseFilterField(String fieldname, ValueFilter value) {
+    public IMessage fromMetadataFilter(MetadataFilter filter, String messageName) {
+        return fromMetadataFilter(filter, FilterSettings.DEFAULT_FILTER, messageName);
+    }
+
+    private Object traverseFilterField(String fieldname, ValueFilter value, FilterSettings filterSettings) {
         if (value.hasListFilter()) {
-            return traverseCollection(fieldname, value.getListFilter());
+            return traverseCollection(fieldname, value.getListFilter(), filterSettings);
         }
         if (value.hasMessageFilter()) {
             return fromProtoFilter(value.getMessageFilter(), fieldname);
@@ -198,10 +208,10 @@ public class ProtoToIMessageConverter {
             }
             throw new IllegalArgumentException(String.format("The operation doesn't match the values {%s}, {%s}", value.getOperation(), value.getSimpleList()));
         }
-        return toSimpleFilter(value.getOperation(), value.getSimpleFilter());
+        return toSimpleFilter(value.getOperation(), value.getSimpleFilter(), filterSettings);
     }
 
-    private Object toSimpleFilter(FilterOperation operation, String simpleFilter) {
+    private Object toSimpleFilter(FilterOperation operation, String simpleFilter, FilterSettings filterSettings) {
         switch (operation) {
             case EQUAL:
                 return StaticUtil.simpleFilter(0, null, StringUtil.enclose(StringEscapeUtils.escapeJava(simpleFilter)));
@@ -223,14 +233,18 @@ public class ProtoToIMessageConverter {
             case WILDCARD:
             case NOT_WILDCARD:
                 return new WildcardFilter(operation, simpleFilter);
+            case EQ_DECIMAL_PRECISION:
+                return new DecimalFilterWithPrecision(simpleFilter, filterSettings);
+            case EQ_TIME_PRECISION:
+                return new TimeFilterWithPrecision(simpleFilter, filterSettings);
             default:
                 throw new IllegalArgumentException("Unsupported operation " + operation);
         }
     }
 
-    private Object traverseCollection(String fieldName, ListValueFilter listFilter) {
+    private Object traverseCollection(String fieldName, ListValueFilter listFilter, FilterSettings filterSettings) {
         return listFilter.getValuesList().stream()
-                .map(value -> traverseFilterField(fieldName, value))
+                .map(value -> traverseFilterField(fieldName, value, filterSettings))
                 .collect(Collectors.toList());
     }
 

@@ -17,6 +17,8 @@ package com.exactpro.th2.sailfish.utils;
 
 import java.util.List;
 
+import com.exactpro.th2.common.grpc.RootComparisonSettings;
+import com.google.protobuf.Duration;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -171,10 +173,103 @@ public class ImplementationIFilterTest extends AbstractConverterTest {
         Assertions.assertThrows(IllegalArgumentException.class, () -> converter.fromProtoFilter(filter.getMessageFilter(), filter.getMessageType()));
     }
 
+    private static List<Arguments> twoDecimalFilterOperationWithPrecision() {
+        return List.of(
+                Arguments.of("10.0", "10.005", "0.005", StatusType.PASSED),
+                Arguments.of("10", "10.005", "0.005", StatusType.PASSED),
+                Arguments.of("10.0", "10.005", "5E-3", StatusType.PASSED),
+                Arguments.of("10.0", "10.006", "0.005", StatusType.FAILED),
+                Arguments.of("10.0", "10.006", "5E-3", StatusType.FAILED),
+                Arguments.of("10", "10.005", "0.005", StatusType.PASSED),
+                Arguments.of("10", "10.005", "0.004", StatusType.FAILED),
+                Arguments.of("10.1", "10.005", "0.095", StatusType.PASSED),
+                Arguments.of("10.1", "10", "0", StatusType.FAILED),
+                Arguments.of("101E-1", "10005E-3", "95E-3", StatusType.PASSED)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("twoDecimalFilterOperationWithPrecision")
+    void testDecimalFilterOperationFilterWithPrecision(String filterValue, String messageValue, String precision, StatusType status) {
+        RootMessageFilter filter = RootMessageFilter.newBuilder()
+                .setMessageType(MESSAGE_TYPE)
+                .setMessageFilter(MessageFilter.newBuilder()
+                        .putFields("compareFilter", ValueFilter.newBuilder()
+                                .setSimpleFilter(filterValue)
+                                .setOperation(FilterOperation.EQ_DECIMAL_PRECISION)
+                                .build())
+                        .build())
+                .setComparisonSettings(RootComparisonSettings.newBuilder()
+                        .setDecimalPrecision(precision)
+                        .build())
+                .build();
+
+        Message actual = createMessageBuilder(MESSAGE_TYPE)
+                .putFields("compareFilter", getSimpleValue(messageValue))
+                .build();
+
+        ComparisonResult result = getResult(actual, filter);
+
+        Assertions.assertEquals(status, result.getResult("compareFilter").getStatus());
+    }
+
+    private static List<Arguments> twoTimeFilterOperationWithPrecision() {
+        return List.of(
+                Arguments.of("2007-12-03T10:15:30", "2007-12-03T10:15:35", createDuration(5), StatusType.PASSED),
+                Arguments.of("2007-12-03T10:15:30", "2007-12-03T10:15:36", createDuration(5), StatusType.FAILED),
+                Arguments.of("2007-12-03T10:15:30", "2007-12-03T10:15:35.100000000", createDuration(5, 100000000), StatusType.PASSED),
+                Arguments.of("2007-12-03T10:15:30", "2007-12-03T10:15:35.100000001", createDuration(5, 100000000), StatusType.FAILED)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("twoTimeFilterOperationWithPrecision")
+    void testTimeFilterOperationFilterWithPrecision(String filterValue, String messageValue, Duration precision, StatusType status) {
+        RootMessageFilter filter = RootMessageFilter.newBuilder()
+                .setMessageType(MESSAGE_TYPE)
+                .setMessageFilter(MessageFilter.newBuilder()
+                        .putFields("compareFilter", ValueFilter.newBuilder()
+                                .setSimpleFilter(filterValue)
+                                .setOperation(FilterOperation.EQ_TIME_PRECISION)
+                                .build())
+                        .build())
+                .setComparisonSettings(RootComparisonSettings.newBuilder()
+                        .setTimePrecision(precision)
+                        .build())
+                .build();
+
+        Message actual = createMessageBuilder(MESSAGE_TYPE)
+                .putFields("compareFilter", getSimpleValue(messageValue))
+                .build();
+
+        ComparisonResult result = getResult(actual, filter);
+
+        Assertions.assertEquals(status, result.getResult("compareFilter").getStatus());
+    }
+
     private ComparisonResult getResult(Message actual, RootMessageFilter filter) {
         MessageWrapper actualIMessage = converter.fromProtoMessage(actual, false);
-        IMessage filterIMessage = converter.fromProtoFilter(filter.getMessageFilter(), filter.getMessageType());
+        IMessage filterIMessage;
+        if (filter.hasComparisonSettings()) {
+            filterIMessage = converter.fromProtoFilter(
+                    filter.getMessageFilter(),
+                    RootComparisonSettingsUtils.convertToFilterSettings(filter.getComparisonSettings()),
+                    filter.getMessageType());
+        } else {
+            filterIMessage = converter.fromProtoFilter(filter.getMessageFilter(), filter.getMessageType());
+        } 
 
         return MessageComparator.compare(actualIMessage, filterIMessage, new ComparatorSettings());
+    }
+    
+    private static Duration createDuration(long seconds, int nanos) {
+        return Duration.newBuilder()
+                .setSeconds(seconds)
+                .setNanos(nanos)
+                .build();
+    }
+
+    private static Duration createDuration(long seconds) {
+        return createDuration(seconds, 0);
     }
 }
