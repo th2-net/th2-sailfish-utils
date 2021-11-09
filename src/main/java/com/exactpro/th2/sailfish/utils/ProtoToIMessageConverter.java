@@ -302,12 +302,20 @@ public class ProtoToIMessageConverter {
     }
 
     private Object traverseField(String fieldName, Value fieldValue) {
-        if (fieldValue.hasMessageValue()) {
-            return convertWithoutDictionary(fieldValue.getMessageValue().getFieldsMap(), fieldName);
-        } else if (fieldValue.hasListValue()) {
-            return convertList(fieldName, fieldValue.getListValue());
+        switch (fieldValue.getKindCase()) {
+            case SIMPLE_VALUE:
+                return fieldValue.getSimpleValue();
+            case MESSAGE_VALUE:
+                return convertWithoutDictionary(fieldValue.getMessageValue().getFieldsMap(), fieldName);
+            case LIST_VALUE:
+                return convertList(fieldName, fieldValue.getListValue());
+            case NULL_VALUE:
+                return null;
+            default:
+                throw new IllegalArgumentException(String.format(
+                        "The field '%s' cannot be traversed, because it has an unrecognized type '%s'", fieldName, fieldValue.getKindCase()
+                ));
         }
-        return fieldValue.getSimpleValue();
     }
 
     private List<?> convertList(String fieldName, ListValue list) {

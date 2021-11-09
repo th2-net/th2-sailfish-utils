@@ -1,5 +1,5 @@
-/******************************************************************************
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+/*
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,20 +12,20 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- ******************************************************************************/
+ */
 
 package com.exactpro.th2.sailfish.utils;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-
-import org.jetbrains.annotations.NotNull;
 
 import com.exactpro.th2.common.grpc.ListValue;
 import com.exactpro.th2.common.grpc.Message;
 import com.exactpro.th2.common.grpc.MessageMetadata;
+import com.exactpro.th2.common.grpc.NullValue;
 import com.exactpro.th2.common.grpc.Value;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 public class AbstractConverterTest {
     @NotNull
@@ -54,5 +54,9 @@ public class AbstractConverterTest {
     @NotNull
     protected Value getSimpleValue(String value) {
         return Value.newBuilder().setSimpleValue(value).build();
+    }
+
+    protected Value nullValue() {
+        return Value.newBuilder().setNullValue(NullValue.NULL_VALUE).build();
     }
 }
