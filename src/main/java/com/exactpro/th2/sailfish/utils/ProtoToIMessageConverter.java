@@ -310,8 +310,11 @@ public class ProtoToIMessageConverter {
             case LIST_VALUE:
                 return convertList(fieldName, fieldValue.getListValue());
             case NULL_VALUE:
-            default:
                 return null;
+            default:
+                throw new IllegalArgumentException(String.format(
+                        "The field '%s' cannot be traversed, because it has an unrecognized type '%s'", fieldName, fieldValue.getKindCase()
+                ));
         }
     }
 
