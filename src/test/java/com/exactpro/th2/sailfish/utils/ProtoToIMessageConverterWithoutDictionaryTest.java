@@ -1,5 +1,5 @@
 /*
- *  Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ *  Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -56,7 +56,8 @@ class ProtoToIMessageConverterWithoutDictionaryTest extends AbstractProtoToIMess
     @Test
     void convertsMessage() {
         Builder simpleMessage = createMessageBuilder("Simple")
-                .putFields("Field", getSimpleValue("A"));
+                .putFields("Field", getSimpleValue("A"))
+                .putFields("NullField", nullValue());
         Builder innerMessage = createMessageBuilder("InnerMessage")
                 .putFields("Simple", getSimpleValue("hello"))
                 .putFields("SimpleList", getListValue(getSimpleValue("1"), getSimpleValue("2")))
@@ -64,7 +65,8 @@ class ProtoToIMessageConverterWithoutDictionaryTest extends AbstractProtoToIMess
                 .putFields("ComplexList", getListValue(
                         Value.newBuilder().setMessageValue(simpleMessage.putFields("Index", getSimpleValue("0")).build()).build(),
                         Value.newBuilder().setMessageValue(simpleMessage.putFields("Index", getSimpleValue("1")).build()).build()
-                ));
+                ))
+                .putFields("NullValue", nullValue());
 
         Message message = createMessageBuilder("SomeMessage")
                 .putFields("Simple", getSimpleValue("hello"))
@@ -77,6 +79,7 @@ class ProtoToIMessageConverterWithoutDictionaryTest extends AbstractProtoToIMess
 
         IMessage simple = messageFactory.createMessage(dictionaryURI, "Simple");
         simple.addField("Field", "A");
+        simple.addField("NullField", null);
         IMessage simple0 = simple.cloneMessage();
         simple0.addField("Index", "0");
         IMessage simple1 = simple.cloneMessage();
@@ -87,6 +90,7 @@ class ProtoToIMessageConverterWithoutDictionaryTest extends AbstractProtoToIMess
         actualInnerMessage.addField("SimpleList", List.of("1", "2"));
         actualInnerMessage.addField("ComplexField", simple);
         actualInnerMessage.addField("ComplexList", List.of(simple0, simple1));
+        actualInnerMessage.addField("NullValue", null);
 
         IMessage actualInner0 = actualInnerMessage.cloneMessage();
         actualInner0.addField("Index", "0");
