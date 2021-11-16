@@ -16,6 +16,8 @@
 
 package com.exactpro.th2.sailfish.utils.filter.util;
 
+import com.exactpro.sf.common.messages.IMessage;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
@@ -23,6 +25,9 @@ import java.text.DecimalFormatSymbols;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.format.DateTimeParseException;
+import java.util.Collection;
+import java.util.stream.Collectors;
 
 public class FilterUtils {
     public static final String DEFAULT_DECIMAL_SEPARATOR = String.valueOf(DecimalFormatSymbols.getInstance().getDecimalSeparator());
@@ -41,10 +46,37 @@ public class FilterUtils {
             return convertNumberValue((String) value);
         } else if (value instanceof BigDecimal) {
             return (BigDecimal) value;
-        } else if (value instanceof Long) {
-            return (Long) value;
+        } else if (value instanceof Float) {
+            return BigDecimal.valueOf((Float) value);
+        } else if (value instanceof Double) {
+            return BigDecimal.valueOf((Double) value);
+        } else if (value instanceof Short) {
+            return new BigDecimal((Short) value);
+        } else if (value instanceof Integer) {
+            return new BigDecimal((Integer) value);
         }
+
         return null;
+    }
+
+    @Nullable
+    public static Comparable<?> convertToComparableValue(Object value) {
+        if (value == null) {
+            return null;
+        }
+        try {
+            try {
+                Comparable<?> result = convertNumberValue(value);
+                return result == null ? convertDateValue(value) : result;
+            } catch (NumberFormatException e) {
+                return convertDateValue(value);
+            }
+        } catch (DateTimeParseException e) {
+            if (value instanceof String) {
+                return (String) value;
+            }
+            throw new IllegalArgumentException("Incorrect value type " + value.getClass().getCanonicalName());
+        }
     }
 
     public static Comparable<?> convertDateValue(String value) {
@@ -69,5 +101,38 @@ public class FilterUtils {
             return (LocalDate) value;
         }
         return null;
+    }
+
+    @NotNull
+    public static String getObjectType(Object value) {
+        return getObjectType(value, true);
+    }
+
+    @NotNull
+    public static String getObjectType(Object value, boolean addCollectionContent) {
+        if (value == null) {
+            return "null";
+        }
+        if (value instanceof IMessage) {
+            return "Message";
+        }
+
+        if (value instanceof Collection<?>) {
+            if (!addCollectionContent) {
+                return "Collection";
+            }
+            Collection<?> list = (Collection<?>)value;
+            return list.isEmpty()
+                    ? "Empty collection"
+                    : "Collection of " + getObjectType(list.iterator().next(), false) + "s";
+        }
+
+        return value.getClass().getSimpleName();
+    }
+
+    private static String collectValueTypes(Collection<?> collection) {
+        return collection.stream()
+                .map(Object::toString)
+                .collect(Collectors.joining( ", "));
     }
 }
