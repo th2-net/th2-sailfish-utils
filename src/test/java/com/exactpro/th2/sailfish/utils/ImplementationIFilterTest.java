@@ -277,6 +277,18 @@ public class ImplementationIFilterTest extends AbstractConverterTest {
                         ""
                 ),
                 Arguments.of(
+                        simpleValueFilter("1", FilterOperation.NOT_EQUAL),
+                        getSimpleValue("2"),
+                        StatusType.PASSED,
+                        ""
+                ),
+                Arguments.of(
+                        simpleValueFilter("1", FilterOperation.EQUAL),
+                        getSimpleValue("2"),
+                        StatusType.FAILED,
+                        ""
+                ),
+                Arguments.of(
                         simpleValueFilter("4.5", FilterOperation.EQUAL),
                         getSimpleValue("4.5"),
                         StatusType.PASSED,

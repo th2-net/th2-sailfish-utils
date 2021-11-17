@@ -48,7 +48,7 @@ public class EqualityFilter implements IOperationFilter {
     @Override
     public ExpressionResult validate(Object actualValue) throws RuntimeException {
         validateActualValue(actualValue);
-        return ExpressionResult.create(value.equals(actualValue) && shouldBeEqual);
+        return ExpressionResult.create(value.equals(actualValue) == shouldBeEqual);
     }
 
     @Override
