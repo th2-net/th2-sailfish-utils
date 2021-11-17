@@ -24,34 +24,31 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 import java.util.Objects;
-import java.util.function.Function;
 
-import static com.exactpro.th2.sailfish.utils.filter.util.FilterUtils.convertToComparableValue;
 import static com.exactpro.th2.sailfish.utils.filter.util.FilterUtils.getObjectType;
 
 
 public class EqualityFilter implements IOperationFilter {
 
-    private FilterOperation operation;
-    private final Comparable<?> value;
-    private Function<Object, Boolean> comparator;
+    private final Object value;
+    private final boolean shouldBeEqual;
 
 
-    public EqualityFilter(@NotNull String simpleFilter, @NotNull FilterOperation filterOperation) {
-        this.value = Objects.requireNonNull(convertToComparableValue(simpleFilter), "Value cannot be converted or null");
-        prepareFilter(filterOperation);
+    public EqualityFilter(@NotNull String simpleFilter, boolean shouldBeEqual) {
+        this.value = Objects.requireNonNull(simpleFilter, "Value cannot be converted or null");
+        this.shouldBeEqual = shouldBeEqual;
     }
 
 
     @Override
     public FilterOperation getOperation() {
-        return operation;
+        return shouldBeEqual ? FilterOperation.EQUAL : FilterOperation.NOT_EQUAL;
     }
 
     @Override
     public ExpressionResult validate(Object actualValue) throws RuntimeException {
         validateActualValue(actualValue);
-        return ExpressionResult.create(comparator.apply(convertToComparableValue(actualValue)));
+        return ExpressionResult.create(value.equals(actualValue) && shouldBeEqual);
     }
 
     @Override
@@ -81,20 +78,6 @@ public class EqualityFilter implements IOperationFilter {
                     getObjectType(actualValue),
                     getObjectType(getValue())
             ));
-        }
-    }
-    
-    private void prepareFilter(@NotNull FilterOperation filterOperation) {
-        Objects.requireNonNull(filterOperation, "Filter operation cannot be null");
-        switch (operation = filterOperation) {
-            case EQUAL:
-                comparator = value::equals;
-                break;
-            case NOT_EQUAL:
-                comparator = (actualValue) -> !value.equals(actualValue);
-                break;
-            default:
-                throw new IllegalArgumentException("Invalid operation type");
         }
     }
 }

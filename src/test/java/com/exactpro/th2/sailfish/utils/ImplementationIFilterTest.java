@@ -262,7 +262,7 @@ public class ImplementationIFilterTest extends AbstractConverterTest {
                                         ).build(),
                                 getSimpleValue("2")),
                         StatusType.FAILED,
-                        "Value type mismatch - actual: Collection of Messages, expected: Long"
+                        "Value type mismatch - actual: Collection of Messages, expected: String"
                 ),
                 Arguments.of(
                         simpleValueFilter("text", FilterOperation.EQUAL),
@@ -277,10 +277,16 @@ public class ImplementationIFilterTest extends AbstractConverterTest {
                         ""
                 ),
                 Arguments.of(
+                        simpleValueFilter("4.5", FilterOperation.EQUAL),
+                        getSimpleValue("4.5"),
+                        StatusType.PASSED,
+                        ""
+                ),
+                Arguments.of(
                         simpleValueFilter("1", FilterOperation.EQUAL),
                         getListValue(getSimpleValue("1"), getSimpleValue("2")),
                         StatusType.FAILED,
-                        "Value type mismatch - actual: Collection of Strings, expected: Long"
+                        "Value type mismatch - actual: Collection of Strings, expected: String"
                 ),
                 Arguments.of(
                         simpleValueFilter("text", FilterOperation.EQUAL),
@@ -298,25 +304,25 @@ public class ImplementationIFilterTest extends AbstractConverterTest {
                         simpleValueFilter("1", FilterOperation.NOT_EQUAL),
                         getListValue(getSimpleValue("1"), getSimpleValue("2")),
                         StatusType.FAILED,
-                        "Value type mismatch - actual: Collection of Strings, expected: Long"
+                        "Value type mismatch - actual: Collection of Strings, expected: String"
                 ),
                 Arguments.of(
                         simpleValueFilter("10", FilterOperation.EQUAL),
                         getComplex("test", Collections.singletonMap("A", "1")),
                         StatusType.FAILED,
-                        "Value type mismatch - actual: Message, expected: Long"
+                        "Value type mismatch - actual: Message, expected: String"
                 ),
                 Arguments.of(
                         simpleValueFilter("10", FilterOperation.NOT_EQUAL),
                         getComplex("test", Collections.singletonMap("A", "1")),
                         StatusType.FAILED,
-                        "Value type mismatch - actual: Message, expected: Long"
+                        "Value type mismatch - actual: Message, expected: String"
                 ),
                 Arguments.of(
                         simpleValueFilter("10", FilterOperation.EQUAL),
                         Value.newBuilder().setNullValue(NullValue.NULL_VALUE).build(),
                         StatusType.FAILED,
-                        "Value type mismatch - actual: null, expected: Long"
+                        "Value type mismatch - actual: null, expected: String"
                 )
         );
     }
@@ -337,6 +343,7 @@ public class ImplementationIFilterTest extends AbstractConverterTest {
 
         ComparisonResult result = getResult(actual, filter);
 
+        Assertions.assertNotNull(result, "Result cannot be null");
         ComparisonResult actualFields = result.getResult("A");
         Assertions.assertNotNull(actualFields, "Fields cannot be null");
         Assertions.assertEquals(status, actualFields.getStatus());

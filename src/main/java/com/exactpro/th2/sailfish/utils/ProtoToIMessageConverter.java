@@ -213,9 +213,9 @@ public class ProtoToIMessageConverter {
     private Object toSimpleFilter(FilterOperation operation, String simpleFilter, FilterSettings filterSettings) {
         switch (operation) {
             case EQUAL:
-                return new EqualityFilter(simpleFilter, FilterOperation.EQUAL);
+                return new EqualityFilter(simpleFilter, true);
             case NOT_EQUAL:
-                return new EqualityFilter(simpleFilter, FilterOperation.NOT_EQUAL);
+                return new EqualityFilter(simpleFilter, false);
             case EMPTY:
                 return StaticUtil.nullFilter(0, null);
             case NOT_EMPTY:

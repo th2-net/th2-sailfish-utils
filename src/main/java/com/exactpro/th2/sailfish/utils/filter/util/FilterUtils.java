@@ -25,9 +25,7 @@ import java.text.DecimalFormatSymbols;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.format.DateTimeParseException;
 import java.util.Collection;
-import java.util.stream.Collectors;
 
 public class FilterUtils {
     public static final String DEFAULT_DECIMAL_SEPARATOR = String.valueOf(DecimalFormatSymbols.getInstance().getDecimalSeparator());
@@ -46,37 +44,10 @@ public class FilterUtils {
             return convertNumberValue((String) value);
         } else if (value instanceof BigDecimal) {
             return (BigDecimal) value;
-        } else if (value instanceof Float) {
-            return BigDecimal.valueOf((Float) value);
-        } else if (value instanceof Double) {
-            return BigDecimal.valueOf((Double) value);
-        } else if (value instanceof Short) {
-            return new BigDecimal((Short) value);
-        } else if (value instanceof Integer) {
-            return new BigDecimal((Integer) value);
+        } else if (value instanceof Long) {
+            return (Long) value;
         }
-
         return null;
-    }
-
-    @Nullable
-    public static Comparable<?> convertToComparableValue(Object value) {
-        if (value == null) {
-            return null;
-        }
-        try {
-            try {
-                Comparable<?> result = convertNumberValue(value);
-                return result == null ? convertDateValue(value) : result;
-            } catch (NumberFormatException e) {
-                return convertDateValue(value);
-            }
-        } catch (DateTimeParseException e) {
-            if (value instanceof String) {
-                return (String) value;
-            }
-            throw new IllegalArgumentException("Incorrect value type " + value.getClass().getCanonicalName());
-        }
     }
 
     public static Comparable<?> convertDateValue(String value) {
@@ -128,11 +99,5 @@ public class FilterUtils {
         }
 
         return value.getClass().getSimpleName();
-    }
-
-    private static String collectValueTypes(Collection<?> collection) {
-        return collection.stream()
-                .map(Object::toString)
-                .collect(Collectors.joining( ", "));
     }
 }
