@@ -40,6 +40,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 public class ImplementationIFilterTest extends AbstractConverterTest {
     private static final String MESSAGE_TYPE = "TestMsg";
@@ -310,7 +311,28 @@ public class ImplementationIFilterTest extends AbstractConverterTest {
                         listValueFilter(FilterOperation.EQUAL, "1", "2", "3"),
                         getComplex("test", Collections.singletonMap("A", "1")),
                         StatusType.FAILED,
-                        "Value type mismatch - actual: Message, expected: Collection of EqualityFilters"
+                        "Value type mismatch - actual: Message, expected: Collection"
+                ),
+                Arguments.of(
+                        listValueFilter(
+                                messageFilter(Map.of(
+                                        "A", simpleValueFilter("1", FilterOperation.EQUAL)
+                                )),
+                                messageFilter(Map.of(
+                                        "B", simpleValueFilter("2", FilterOperation.EQUAL)
+                                ))
+                        ),
+                        getComplex("test", Collections.singletonMap("A", "1")),
+                        StatusType.FAILED,
+                        "Value type mismatch - actual: Message, expected: Collection of Messages"
+                ),
+                Arguments.of(
+                        messageValueFilter(messageFilter(Map.of(
+                                "A", simpleValueFilter("1", FilterOperation.EQUAL)
+                        ))),
+                        getListValue(getSimpleValue("1"), getSimpleValue("2")),
+                        StatusType.FAILED,
+                        "Value type mismatch - actual: Collection of Strings, expected: Message"
                 ),
                 Arguments.of(
                         simpleValueFilter("1", FilterOperation.NOT_EQUAL),

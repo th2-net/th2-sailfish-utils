@@ -20,6 +20,7 @@ import com.exactpro.th2.common.grpc.FilterOperation;
 import com.exactpro.th2.common.grpc.ListValue;
 import com.exactpro.th2.common.grpc.ListValueFilter;
 import com.exactpro.th2.common.grpc.Message;
+import com.exactpro.th2.common.grpc.MessageFilter;
 import com.exactpro.th2.common.grpc.MessageMetadata;
 import com.exactpro.th2.common.grpc.NullValue;
 import com.exactpro.th2.common.grpc.Value;
@@ -29,6 +30,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.function.Function;
 
 public class AbstractConverterTest {
     @NotNull
@@ -64,16 +66,33 @@ public class AbstractConverterTest {
     }
 
     protected static ValueFilter listValueFilter(@NotNull FilterOperation operation, @NotNull String... values) {
-        var listValueFilter = ListValueFilter.newBuilder();
-        for (String value : values) {
-            listValueFilter.addValues(simpleValueFilter(value, operation));
-        }
-        return ValueFilter.newBuilder()
-                .setListFilter(listValueFilter)
-                .build();
+        return listValueFilter(value -> simpleValueFilter(value, operation), values);
+    }
+
+    protected static ValueFilter listValueFilter(@NotNull MessageFilter... values) {
+        return listValueFilter(AbstractConverterTest::messageValueFilter, values);
+    }
+
+    protected static MessageFilter messageFilter(Map<String, ValueFilter> fields) {
+        return MessageFilter.newBuilder().putAllFields(fields).build();
+    }
+
+    protected static ValueFilter messageValueFilter(MessageFilter messageFilter) {
+        return ValueFilter.newBuilder().setMessageFilter(messageFilter).build();
     }
 
     protected Value nullValue() {
         return Value.newBuilder().setNullValue(NullValue.NULL_VALUE).build();
+    }
+
+    @SafeVarargs
+    private static <T> ValueFilter listValueFilter(Function<T, ValueFilter> valueConsumer, T... values) {
+        var listValueFilter = ListValueFilter.newBuilder();
+        for (T value : values) {
+            listValueFilter.addValues(valueConsumer.apply(value));
+        }
+        return ValueFilter.newBuilder()
+                .setListFilter(listValueFilter)
+                .build();
     }
 }
