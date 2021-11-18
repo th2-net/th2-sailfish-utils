@@ -356,7 +356,7 @@ public class ImplementationIFilterTest extends AbstractConverterTest {
                         simpleValueFilter("10", FilterOperation.EQUAL),
                         Value.newBuilder().setNullValue(NullValue.NULL_VALUE).build(),
                         StatusType.FAILED,
-                        "Value type mismatch - actual: null, expected: String"
+                        ""
                 )
         );
     }

@@ -72,7 +72,7 @@ public class EqualityFilter implements IOperationFilter {
     }
     
     private void validateActualValue(Object actualValue) {
-        if (actualValue == null || actualValue instanceof Collection<?> || actualValue instanceof IMessage) {
+        if (actualValue instanceof Collection<?> || actualValue instanceof IMessage) {
             throw new IllegalArgumentException(String.format(
                     "Value type mismatch - actual: %s, expected: %s",
                     getObjectType(actualValue),

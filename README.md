@@ -5,7 +5,7 @@ This library contains classes to convert messages from th2 to Sailfish format an
 ## Release Notes
 
 ### 3.10.2
-+ Migrated sailfish-core version from `3.2.1676` to `3.2.1731`
++ Migrated sailfish-core version from `3.2.1676` to `3.2.1741`
 + Replaced sailfish equality filters with their counterparts
 
 ### 3.10.1
