@@ -15,16 +15,6 @@
  */
 package com.exactpro.th2.sailfish.utils;
 
-import java.util.List;
-
-import com.exactpro.th2.common.grpc.RootComparisonSettings;
-import com.google.protobuf.Duration;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
-
 import com.exactpro.sf.common.messages.IMessage;
 import com.exactpro.sf.comparison.ComparatorSettings;
 import com.exactpro.sf.comparison.ComparisonResult;
@@ -34,17 +24,30 @@ import com.exactpro.sf.scriptrunner.StatusType;
 import com.exactpro.th2.common.grpc.FilterOperation;
 import com.exactpro.th2.common.grpc.Message;
 import com.exactpro.th2.common.grpc.MessageFilter;
+import com.exactpro.th2.common.grpc.NullValue;
+import com.exactpro.th2.common.grpc.RootComparisonSettings;
 import com.exactpro.th2.common.grpc.RootMessageFilter;
 import com.exactpro.th2.common.grpc.SimpleList;
+import com.exactpro.th2.common.grpc.Value;
 import com.exactpro.th2.common.grpc.ValueFilter;
 import com.exactpro.th2.sailfish.utils.factory.DefaultMessageFactoryProxy;
+import com.google.protobuf.Duration;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 public class ImplementationIFilterTest extends AbstractConverterTest {
     private static final String MESSAGE_TYPE = "TestMsg";
-    private final DefaultMessageFactoryProxy messageFactory = new DefaultMessageFactoryProxy();
-    private final SailfishURI dictionaryURI = SailfishURI.unsafeParse("test");
+    private static final DefaultMessageFactoryProxy MESSAGE_FACTORY = new DefaultMessageFactoryProxy();
+    private final static SailfishURI DICTIONARY_URI = SailfishURI.unsafeParse("test");
     private final ProtoToIMessageConverter converter = new ProtoToIMessageConverter(
-            messageFactory, null, dictionaryURI
+            MESSAGE_FACTORY, null, DICTIONARY_URI
     );
 
     private static List<Arguments> inOperationFilter() {
@@ -245,6 +248,140 @@ public class ImplementationIFilterTest extends AbstractConverterTest {
         ComparisonResult result = getResult(actual, filter);
 
         Assertions.assertEquals(status, result.getResult("compareFilter").getStatus());
+    }
+
+    private static List<Arguments> equalityFilterData() {
+        return List.of(
+                Arguments.of(
+                        simpleValueFilter("1", FilterOperation.NOT_EQUAL),
+                        getListValue(
+                                Value.newBuilder()
+                                        .setMessageValue(
+                                                createMessageBuilder("test")
+                                                        .putFields("A", getSimpleValue("1"))
+                                                        .build()
+                                        ).build(),
+                                getSimpleValue("2")),
+                        StatusType.FAILED,
+                        "Value type mismatch - actual: Collection of Messages, expected: String"
+                ),
+                Arguments.of(
+                        simpleValueFilter("text", FilterOperation.EQUAL),
+                        getSimpleValue("text"),
+                        StatusType.PASSED,
+                        ""
+                ),
+                Arguments.of(
+                        simpleValueFilter("1", FilterOperation.NOT_EQUAL),
+                        getSimpleValue("1"),
+                        StatusType.FAILED,
+                        ""
+                ),
+                Arguments.of(
+                        simpleValueFilter("1", FilterOperation.NOT_EQUAL),
+                        getSimpleValue("2"),
+                        StatusType.PASSED,
+                        ""
+                ),
+                Arguments.of(
+                        simpleValueFilter("1", FilterOperation.EQUAL),
+                        getSimpleValue("2"),
+                        StatusType.FAILED,
+                        ""
+                ),
+                Arguments.of(
+                        simpleValueFilter("4.5", FilterOperation.EQUAL),
+                        getSimpleValue("4.5"),
+                        StatusType.PASSED,
+                        ""
+                ),
+                Arguments.of(
+                        simpleValueFilter("1", FilterOperation.EQUAL),
+                        getListValue(getSimpleValue("1"), getSimpleValue("2")),
+                        StatusType.FAILED,
+                        "Value type mismatch - actual: Collection of Strings, expected: String"
+                ),
+                Arguments.of(
+                        simpleValueFilter("text", FilterOperation.EQUAL),
+                        getListValue(getSimpleValue("1"), getSimpleValue("2")),
+                        StatusType.FAILED,
+                        "Value type mismatch - actual: Collection of Strings, expected: String"
+                ),
+                Arguments.of(
+                        listValueFilter(FilterOperation.EQUAL, "1", "2", "3"),
+                        getComplex("test", Collections.singletonMap("A", "1")),
+                        StatusType.FAILED,
+                        "Value type mismatch - actual: Message, expected: Collection"
+                ),
+                Arguments.of(
+                        listValueFilter(
+                                messageFilter(Map.of(
+                                        "A", simpleValueFilter("1", FilterOperation.EQUAL)
+                                )),
+                                messageFilter(Map.of(
+                                        "B", simpleValueFilter("2", FilterOperation.EQUAL)
+                                ))
+                        ),
+                        getComplex("test", Collections.singletonMap("A", "1")),
+                        StatusType.FAILED,
+                        "Value type mismatch - actual: Message, expected: Collection of Messages"
+                ),
+                Arguments.of(
+                        messageValueFilter(messageFilter(Map.of(
+                                "A", simpleValueFilter("1", FilterOperation.EQUAL)
+                        ))),
+                        getListValue(getSimpleValue("1"), getSimpleValue("2")),
+                        StatusType.FAILED,
+                        "Value type mismatch - actual: Collection of Strings, expected: Message"
+                ),
+                Arguments.of(
+                        simpleValueFilter("1", FilterOperation.NOT_EQUAL),
+                        getListValue(getSimpleValue("1"), getSimpleValue("2")),
+                        StatusType.FAILED,
+                        "Value type mismatch - actual: Collection of Strings, expected: String"
+                ),
+                Arguments.of(
+                        simpleValueFilter("10", FilterOperation.EQUAL),
+                        getComplex("test", Collections.singletonMap("A", "1")),
+                        StatusType.FAILED,
+                        "Value type mismatch - actual: Message, expected: String"
+                ),
+                Arguments.of(
+                        simpleValueFilter("10", FilterOperation.NOT_EQUAL),
+                        getComplex("test", Collections.singletonMap("A", "1")),
+                        StatusType.FAILED,
+                        "Value type mismatch - actual: Message, expected: String"
+                ),
+                Arguments.of(
+                        simpleValueFilter("10", FilterOperation.EQUAL),
+                        Value.newBuilder().setNullValue(NullValue.NULL_VALUE).build(),
+                        StatusType.FAILED,
+                        ""
+                )
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("equalityFilterData")
+    void testEqualityFilter(ValueFilter valueFilter, Value messageValue, StatusType status, String exceptionMessage) {
+        RootMessageFilter filter = RootMessageFilter.newBuilder()
+                .setMessageType(MESSAGE_TYPE)
+                .setMessageFilter(MessageFilter.newBuilder()
+                        .putFields("A", valueFilter)
+                        .build())
+                .build();
+        
+        Message actual = createMessageBuilder(MESSAGE_TYPE)
+                .putFields("A", messageValue)
+                .build();
+
+        ComparisonResult result = getResult(actual, filter);
+
+        Assertions.assertNotNull(result, "Result cannot be null");
+        ComparisonResult actualFields = result.getResult("A");
+        Assertions.assertNotNull(actualFields, "Fields cannot be null");
+        Assertions.assertEquals(status, actualFields.getStatus());
+        Assertions.assertEquals(exceptionMessage, actualFields.getExceptionMessage());
     }
 
     private ComparisonResult getResult(Message actual, RootMessageFilter filter) {

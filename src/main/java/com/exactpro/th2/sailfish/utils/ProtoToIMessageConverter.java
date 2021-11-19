@@ -28,10 +28,10 @@ import java.util.Map.Entry;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
+import com.exactpro.th2.sailfish.utils.filter.EqualityFilter;
 import com.exactpro.th2.sailfish.utils.filter.precision.DecimalFilterWithPrecision;
 import com.exactpro.th2.sailfish.utils.filter.precision.TimeFilterWithPrecision;
 import org.apache.commons.lang3.BooleanUtils;
-import org.apache.commons.text.StringEscapeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -46,7 +46,6 @@ import com.exactpro.sf.common.messages.structures.IAttributeStructure;
 import com.exactpro.sf.common.messages.structures.IDictionaryStructure;
 import com.exactpro.sf.common.messages.structures.IFieldStructure;
 import com.exactpro.sf.common.messages.structures.IMessageStructure;
-import com.exactpro.sf.common.util.StringUtil;
 import com.exactpro.sf.comparison.conversion.ConversionException;
 import com.exactpro.sf.comparison.conversion.IConverter;
 import com.exactpro.sf.comparison.conversion.impl.BigDecimalConverter;
@@ -214,10 +213,9 @@ public class ProtoToIMessageConverter {
     private Object toSimpleFilter(FilterOperation operation, String simpleFilter, FilterSettings filterSettings) {
         switch (operation) {
             case EQUAL:
-                return StaticUtil.simpleFilter(0, null, StringUtil.enclose(StringEscapeUtils.escapeJava(simpleFilter)));
+                return new EqualityFilter(simpleFilter, true);
             case NOT_EQUAL:
-                // Enclose value to single quotes isn't required for arguments
-                return StaticUtil.filter(0, null, "x != value", "value", simpleFilter);
+                return new EqualityFilter(simpleFilter, false);
             case EMPTY:
                 return StaticUtil.nullFilter(0, null);
             case NOT_EMPTY:

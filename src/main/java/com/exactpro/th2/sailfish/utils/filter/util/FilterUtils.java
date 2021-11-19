@@ -16,6 +16,8 @@
 
 package com.exactpro.th2.sailfish.utils.filter.util;
 
+import com.exactpro.sf.common.messages.IMessage;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
@@ -23,6 +25,7 @@ import java.text.DecimalFormatSymbols;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Collection;
 
 public class FilterUtils {
     public static final String DEFAULT_DECIMAL_SEPARATOR = String.valueOf(DecimalFormatSymbols.getInstance().getDecimalSeparator());
@@ -69,5 +72,32 @@ public class FilterUtils {
             return (LocalDate) value;
         }
         return null;
+    }
+
+    @NotNull
+    public static String getObjectType(Object value) {
+        return getObjectType(value, true);
+    }
+
+    @NotNull
+    public static String getObjectType(Object value, boolean addCollectionContent) {
+        if (value == null) {
+            return "null";
+        }
+        if (value instanceof IMessage) {
+            return "Message";
+        }
+
+        if (value instanceof Collection<?>) {
+            if (!addCollectionContent) {
+                return "Collection";
+            }
+            Collection<?> list = (Collection<?>)value;
+            return list.isEmpty()
+                    ? "Empty collection"
+                    : "Collection of " + getObjectType(list.iterator().next(), false) + "s";
+        }
+
+        return value.getClass().getSimpleName();
     }
 }
