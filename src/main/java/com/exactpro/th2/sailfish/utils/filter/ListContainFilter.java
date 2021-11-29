@@ -18,6 +18,8 @@ package com.exactpro.th2.sailfish.utils.filter;
 import java.util.List;
 import java.util.Objects;
 
+import org.jetbrains.annotations.NotNull;
+
 import com.exactpro.sf.aml.scriptutil.ExpressionResult;
 import com.exactpro.th2.common.grpc.FilterOperation;
 
@@ -39,7 +41,7 @@ public class ListContainFilter extends AbstractNotNullFilter {
     }
 
     @Override
-    public ExpressionResult validateInternal(Object value) throws RuntimeException {
+    protected @NotNull ExpressionResult validateInternal(@NotNull Object value) throws RuntimeException {
         Objects.requireNonNull(value);
         if (!(value instanceof String)) {
             throw new IllegalArgumentException("Incorrect value type " + value.getClass().getSimpleName());

@@ -45,7 +45,7 @@ public class NullFilter implements IOperationFilter {
 
     @Override
     public ExpressionResult validate(Object value) throws RuntimeException {
-        return ExpressionResult.create(isNull(value) == acceptNull);
+        return ExpressionResult.create(FilterUtils.isNull(value) == acceptNull);
     }
 
     @Override
@@ -71,9 +71,5 @@ public class NullFilter implements IOperationFilter {
     @Override
     public String toString() {
         return getCondition();
-    }
-
-    private boolean isNull(Object value) {
-        return value == null || value == FilterUtils.NULL_VALUE;
     }
 }

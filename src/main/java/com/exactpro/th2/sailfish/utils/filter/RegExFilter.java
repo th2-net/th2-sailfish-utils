@@ -19,6 +19,8 @@ import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.jetbrains.annotations.NotNull;
+
 import com.exactpro.sf.aml.scriptutil.ExpressionResult;
 import com.exactpro.th2.common.grpc.FilterOperation;
 
@@ -40,7 +42,7 @@ public class RegExFilter extends AbstractNotNullFilter {
     }
 
     @Override
-    public ExpressionResult validateInternal(Object value) {
+    protected @NotNull ExpressionResult validateInternal(@NotNull Object value) {
         Objects.requireNonNull(value);
         if (!(value instanceof String)) {
             throw new IllegalArgumentException("Incorrect value type " + value.getClass().getSimpleName());

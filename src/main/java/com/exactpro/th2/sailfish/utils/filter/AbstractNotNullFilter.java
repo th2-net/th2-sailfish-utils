@@ -16,17 +16,20 @@
 
 package com.exactpro.th2.sailfish.utils.filter;
 
+import org.jetbrains.annotations.NotNull;
+
 import com.exactpro.sf.aml.scriptutil.ExpressionResult;
 import com.exactpro.th2.sailfish.utils.filter.util.FilterUtils;
 
 public abstract class AbstractNotNullFilter implements IOperationFilter {
     @Override
     public ExpressionResult validate(Object value) throws RuntimeException {
-        if (value == null || value == FilterUtils.NULL_VALUE) {
+        if (FilterUtils.isNull(value)) {
             return ExpressionResult.create(false);
         }
         return validateInternal(value);
     }
 
-    protected abstract ExpressionResult validateInternal(Object value);
+    @NotNull
+    protected abstract ExpressionResult validateInternal(@NotNull Object value);
 }

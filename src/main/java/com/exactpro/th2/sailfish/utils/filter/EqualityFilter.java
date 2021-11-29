@@ -30,12 +30,12 @@ import static com.exactpro.th2.sailfish.utils.filter.util.FilterUtils.getObjectT
 
 public class EqualityFilter extends AbstractNotNullFilter {
 
-    private final Object value;
+    private final Object expectedValue;
     private final boolean shouldBeEqual;
 
 
     public EqualityFilter(@NotNull String simpleFilter, boolean shouldBeEqual) {
-        this.value = Objects.requireNonNull(simpleFilter, "Value cannot be converted or null");
+        this.expectedValue = Objects.requireNonNull(simpleFilter, "Value cannot be converted or null");
         this.shouldBeEqual = shouldBeEqual;
     }
 
@@ -46,14 +46,14 @@ public class EqualityFilter extends AbstractNotNullFilter {
     }
 
     @Override
-    public ExpressionResult validateInternal(Object value) {
+    protected @NotNull ExpressionResult validateInternal(@NotNull Object value) {
         validateActualValue(value);
-        return ExpressionResult.create(this.value.equals(value) == shouldBeEqual);
+        return ExpressionResult.create(expectedValue.equals(value) == shouldBeEqual);
     }
 
     @Override
     public String getCondition() {
-        return String.valueOf(value);
+        return String.valueOf(expectedValue);
     }
 
     @Override
@@ -63,7 +63,7 @@ public class EqualityFilter extends AbstractNotNullFilter {
 
     @Override
     public Object getValue() throws MvelException {
-        return value;
+        return expectedValue;
     }
 
     @Override

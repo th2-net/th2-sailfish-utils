@@ -40,6 +40,12 @@ public class FilterUtils {
         }
     }
 
+    private FilterUtils() {
+    }
+
+    public static boolean isNull(Object value) {
+        return value == null || value == NULL_VALUE;
+    }
 
     public static Comparable<?> convertNumberValue(String value) {
         if (value.contains(DEFAULT_DECIMAL_SEPARATOR)) {
