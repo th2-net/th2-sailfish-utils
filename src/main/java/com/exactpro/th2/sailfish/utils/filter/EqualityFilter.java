@@ -28,7 +28,7 @@ import java.util.Objects;
 import static com.exactpro.th2.sailfish.utils.filter.util.FilterUtils.getObjectType;
 
 
-public class EqualityFilter implements IOperationFilter {
+public class EqualityFilter extends AbstractNotNullFilter {
 
     private final Object value;
     private final boolean shouldBeEqual;
@@ -46,9 +46,9 @@ public class EqualityFilter implements IOperationFilter {
     }
 
     @Override
-    public ExpressionResult validate(Object actualValue) throws RuntimeException {
-        validateActualValue(actualValue);
-        return ExpressionResult.create(value.equals(actualValue) == shouldBeEqual);
+    public ExpressionResult validateInternal(Object value) {
+        validateActualValue(value);
+        return ExpressionResult.create(this.value.equals(value) == shouldBeEqual);
     }
 
     @Override

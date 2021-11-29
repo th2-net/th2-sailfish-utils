@@ -26,7 +26,7 @@ import com.exactpro.sf.aml.scriptutil.ExpressionResult;
 import com.exactpro.th2.common.grpc.FilterOperation;
 import com.exactpro.th2.sailfish.utils.filter.util.FilterUtils;
 
-public class CompareFilter implements IOperationFilter {
+public class CompareFilter extends AbstractNotNullFilter {
 
     private final Comparable<?> value;
     private final String stringFormatOperation;
@@ -72,7 +72,7 @@ public class CompareFilter implements IOperationFilter {
     }
 
     @Override
-    public ExpressionResult validate(Object value) throws RuntimeException {
+    protected ExpressionResult validateInternal(Object value) {
         Objects.requireNonNull(value);
         if (!(value instanceof String)) {
             throw new IllegalArgumentException("Incorrect value type " + value.getClass().getSimpleName());

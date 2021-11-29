@@ -29,6 +29,16 @@ import java.util.Collection;
 
 public class FilterUtils {
     public static final String DEFAULT_DECIMAL_SEPARATOR = String.valueOf(DecimalFormatSymbols.getInstance().getDecimalSeparator());
+    public static final NullValue NULL_VALUE = new NullValue();
+    public static class NullValue {
+        private NullValue() {
+        }
+
+        @Override
+        public String toString() {
+            return "null";
+        }
+    }
 
 
     public static Comparable<?> convertNumberValue(String value) {

@@ -22,7 +22,7 @@ import org.apache.commons.io.FilenameUtils;
 import com.exactpro.sf.aml.scriptutil.ExpressionResult;
 import com.exactpro.th2.common.grpc.FilterOperation;
 
-public class WildcardFilter implements IOperationFilter {
+public class WildcardFilter extends AbstractNotNullFilter {
 
     private final String value;
     private final FilterOperation operation;
@@ -40,7 +40,7 @@ public class WildcardFilter implements IOperationFilter {
     }
 
     @Override
-    public ExpressionResult validate(Object value) throws RuntimeException {
+    public ExpressionResult validateInternal(Object value) throws RuntimeException {
         Objects.requireNonNull(value);
         if (!(value instanceof String)) {
             throw new IllegalArgumentException("Incorrect value type " + value.getClass().getSimpleName());
