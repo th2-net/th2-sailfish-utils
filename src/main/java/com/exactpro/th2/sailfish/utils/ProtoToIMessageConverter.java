@@ -28,7 +28,9 @@ import java.util.Map.Entry;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
+import com.exactpro.th2.common.grpc.NullValue;
 import com.exactpro.th2.sailfish.utils.filter.EqualityFilter;
+import com.exactpro.th2.sailfish.utils.filter.NullFilter;
 import com.exactpro.th2.sailfish.utils.filter.precision.DecimalFilterWithPrecision;
 import com.exactpro.th2.sailfish.utils.filter.precision.TimeFilterWithPrecision;
 import org.apache.commons.lang3.BooleanUtils;
@@ -77,6 +79,7 @@ import com.exactpro.th2.sailfish.utils.filter.CompareFilter;
 import com.exactpro.th2.sailfish.utils.filter.ListContainFilter;
 import com.exactpro.th2.sailfish.utils.filter.RegExFilter;
 import com.exactpro.th2.sailfish.utils.filter.WildcardFilter;
+import com.exactpro.th2.sailfish.utils.filter.util.FilterUtils;
 import com.google.protobuf.InvalidProtocolBufferException;
 
 public class ProtoToIMessageConverter {
@@ -89,6 +92,7 @@ public class ProtoToIMessageConverter {
 
     public static class Parameters {
         private boolean allowUnknownEnumValues;
+        private boolean useMarkerForNullsInMessage;
 
         private Parameters() {
         }
@@ -99,6 +103,19 @@ public class ProtoToIMessageConverter {
 
         public Parameters setAllowUnknownEnumValues(boolean allowUnknownEnumValues) {
             this.allowUnknownEnumValues = allowUnknownEnumValues;
+            return this;
+        }
+
+        public boolean isUseMarkerForNullsInMessage() {
+            return useMarkerForNullsInMessage;
+        }
+
+        /**
+         * Enables using {@link FilterUtils#NULL_VALUE} marker instead of {@code null} values when converting a message.
+         * Helps to distinct if filed was set in the original message with {@link NullValue} or there was no filed in message at all.
+         */
+        public Parameters setUseMarkerForNullsInMessage(boolean useMarkerForNullsInMessage) {
+            this.useMarkerForNullsInMessage = useMarkerForNullsInMessage;
             return this;
         }
     }
@@ -217,9 +234,9 @@ public class ProtoToIMessageConverter {
             case NOT_EQUAL:
                 return new EqualityFilter(simpleFilter, false);
             case EMPTY:
-                return StaticUtil.nullFilter(0, null);
+                return NullFilter.nullValue();
             case NOT_EMPTY:
-                return StaticUtil.notNullFilter(0, null);
+                return NullFilter.notNullValue();
             case LIKE:
             case NOT_LIKE:
                 return new RegExFilter(operation, simpleFilter);
@@ -308,7 +325,7 @@ public class ProtoToIMessageConverter {
             case LIST_VALUE:
                 return convertList(fieldName, fieldValue.getListValue());
             case NULL_VALUE:
-                return null;
+                return parameters.isUseMarkerForNullsInMessage() ? FilterUtils.NULL_VALUE : null;
             default:
                 throw new IllegalArgumentException(String.format(
                         "The field '%s' cannot be traversed, because it has an unrecognized type '%s'", fieldName, fieldValue.getKindCase()
@@ -341,7 +358,7 @@ public class ProtoToIMessageConverter {
     private Object convertToTarget(Value value, IFieldStructure fieldStructure) {
         KindCase kindCase = value.getKindCase();
         if (kindCase == KindCase.NULL_VALUE || kindCase == KindCase.KIND_NOT_SET) {
-            return null; // skip null value conversion
+            return parameters.isUseMarkerForNullsInMessage() ? FilterUtils.NULL_VALUE : null; // skip null value conversion
         }
         checkKind(value, fieldStructure.getName(), KindCase.SIMPLE_VALUE);
         String simpleValue = value.getSimpleValue();

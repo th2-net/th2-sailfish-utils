@@ -19,10 +19,12 @@ import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.jetbrains.annotations.NotNull;
+
 import com.exactpro.sf.aml.scriptutil.ExpressionResult;
 import com.exactpro.th2.common.grpc.FilterOperation;
 
-public class RegExFilter implements IOperationFilter {
+public class RegExFilter extends AbstractNotNullFilter {
 
     private final Pattern pattern;
     private final FilterOperation operation;
@@ -40,7 +42,7 @@ public class RegExFilter implements IOperationFilter {
     }
 
     @Override
-    public ExpressionResult validate(Object value) throws RuntimeException {
+    protected @NotNull ExpressionResult validateInternal(@NotNull Object value) {
         Objects.requireNonNull(value);
         if (!(value instanceof String)) {
             throw new IllegalArgumentException("Incorrect value type " + value.getClass().getSimpleName());

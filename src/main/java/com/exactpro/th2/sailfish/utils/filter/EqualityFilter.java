@@ -28,14 +28,14 @@ import java.util.Objects;
 import static com.exactpro.th2.sailfish.utils.filter.util.FilterUtils.getObjectType;
 
 
-public class EqualityFilter implements IOperationFilter {
+public class EqualityFilter extends AbstractNotNullFilter {
 
-    private final Object value;
+    private final Object expectedValue;
     private final boolean shouldBeEqual;
 
 
     public EqualityFilter(@NotNull String simpleFilter, boolean shouldBeEqual) {
-        this.value = Objects.requireNonNull(simpleFilter, "Value cannot be converted or null");
+        this.expectedValue = Objects.requireNonNull(simpleFilter, "Value cannot be converted or null");
         this.shouldBeEqual = shouldBeEqual;
     }
 
@@ -46,14 +46,14 @@ public class EqualityFilter implements IOperationFilter {
     }
 
     @Override
-    public ExpressionResult validate(Object actualValue) throws RuntimeException {
-        validateActualValue(actualValue);
-        return ExpressionResult.create(value.equals(actualValue) == shouldBeEqual);
+    protected @NotNull ExpressionResult validateInternal(@NotNull Object value) {
+        validateActualValue(value);
+        return ExpressionResult.create(expectedValue.equals(value) == shouldBeEqual);
     }
 
     @Override
     public String getCondition() {
-        return String.valueOf(value);
+        return String.valueOf(expectedValue);
     }
 
     @Override
@@ -63,7 +63,7 @@ public class EqualityFilter implements IOperationFilter {
 
     @Override
     public Object getValue() throws MvelException {
-        return value;
+        return expectedValue;
     }
 
     @Override

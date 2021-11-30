@@ -29,7 +29,23 @@ import java.util.Collection;
 
 public class FilterUtils {
     public static final String DEFAULT_DECIMAL_SEPARATOR = String.valueOf(DecimalFormatSymbols.getInstance().getDecimalSeparator());
+    public static final NullValue NULL_VALUE = new NullValue();
+    public static class NullValue {
+        private NullValue() {
+        }
 
+        @Override
+        public String toString() {
+            return "null";
+        }
+    }
+
+    private FilterUtils() {
+    }
+
+    public static boolean isNull(Object value) {
+        return value == null || value == NULL_VALUE;
+    }
 
     public static Comparable<?> convertNumberValue(String value) {
         if (value.contains(DEFAULT_DECIMAL_SEPARATOR)) {
