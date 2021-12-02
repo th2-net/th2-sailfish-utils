@@ -18,6 +18,7 @@ package com.exactpro.th2.sailfish.utils;
 import com.exactpro.sf.common.messages.IMessage;
 import com.exactpro.sf.comparison.ComparatorSettings;
 import com.exactpro.sf.comparison.ComparisonResult;
+import com.exactpro.sf.comparison.ComparisonUtil;
 import com.exactpro.sf.comparison.MessageComparator;
 import com.exactpro.sf.configuration.suri.SailfishURI;
 import com.exactpro.sf.scriptrunner.StatusType;
@@ -33,6 +34,7 @@ import com.exactpro.th2.common.grpc.ValueFilter;
 import com.exactpro.th2.sailfish.utils.factory.DefaultMessageFactoryProxy;
 import com.google.protobuf.Duration;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -214,6 +216,46 @@ public class ImplementationIFilterTest extends AbstractConverterTest {
         ComparisonResult result = getResult(actual, filter);
 
         Assertions.assertEquals(status, result.getResult("compareFilter").getStatus());
+    }
+
+    @Test
+    void testDecimalFilterWithPrecisionOnComplexMessage() {
+        RootMessageFilter filter = RootMessageFilter.newBuilder()
+                .setMessageType(MESSAGE_TYPE)
+                .setMessageFilter(
+                        messageFilter(
+                                Map.of(
+                                        "compareFilter",
+                                        listValueFilter(messageFilter(
+                                                        Map.of(
+                                                                "Simple in rep group",
+                                                                simpleValueFilter("2.22", FilterOperation.EQ_DECIMAL_PRECISION)
+                                                        )
+                                                )
+                                        )
+                                )
+                        )
+                )
+                .setComparisonSettings(RootComparisonSettings.newBuilder()
+                        .setDecimalPrecision("0.01")
+                        .build())
+                .build();
+
+        Message actual = createMessageBuilder(MESSAGE_TYPE)
+                .putFields(
+                        "compareFilter",
+                        getListValue(
+                                getComplex(
+                                        "Test",
+                                        Map.of("Simple in rep group", "2.221")
+                                )
+                        )
+                ).build();
+
+        ComparisonResult result = getResult(actual, filter);
+
+        Assertions.assertNotNull(result, "Result cannot be null");
+        Assertions.assertEquals(StatusType.PASSED, ComparisonUtil.getStatusType(result), "Result should be passed");
     }
 
     private static List<Arguments> twoTimeFilterOperationWithPrecision() {

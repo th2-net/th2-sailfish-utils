@@ -211,12 +211,12 @@ public class ProtoToIMessageConverter {
         return fromMetadataFilter(filter, FilterSettings.DEFAULT_FILTER, messageName);
     }
 
-    private Object traverseFilterField(String fieldname, ValueFilter value, FilterSettings filterSettings) {
+    private Object traverseFilterField(String fieldName, ValueFilter value, FilterSettings filterSettings) {
         if (value.hasListFilter()) {
-            return traverseCollection(fieldname, value.getListFilter(), filterSettings);
+            return traverseCollection(fieldName, value.getListFilter(), filterSettings);
         }
         if (value.hasMessageFilter()) {
-            return fromProtoFilter(value.getMessageFilter(), fieldname);
+            return fromProtoFilter(value.getMessageFilter(), filterSettings, fieldName);
         }
         if (value.hasSimpleList()) {
             if (value.getOperation() == FilterOperation.IN || value.getOperation() == FilterOperation.NOT_IN) {
