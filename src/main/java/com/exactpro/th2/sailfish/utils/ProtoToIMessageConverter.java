@@ -30,6 +30,8 @@ import java.util.stream.Collectors;
 
 import com.exactpro.th2.common.grpc.NullValue;
 import com.exactpro.th2.sailfish.utils.filter.EqualityFilter;
+import com.exactpro.th2.sailfish.utils.filter.ExactNullFilter;
+import com.exactpro.th2.sailfish.utils.filter.IOperationFilter;
 import com.exactpro.th2.sailfish.utils.filter.NullFilter;
 import com.exactpro.th2.sailfish.utils.filter.precision.DecimalFilterWithPrecision;
 import com.exactpro.th2.sailfish.utils.filter.precision.TimeFilterWithPrecision;
@@ -224,7 +226,18 @@ public class ProtoToIMessageConverter {
             }
             throw new IllegalArgumentException(String.format("The operation doesn't match the values {%s}, {%s}", value.getOperation(), value.getSimpleList()));
         }
+        if (value.getKindCase() == ValueFilter.KindCase.NULL_VALUE) {
+            return toNullFilter(value.getOperation(), filterSettings);
+        }
         return toSimpleFilter(value.getOperation(), value.getSimpleFilter(), filterSettings);
+    }
+
+    private IOperationFilter toNullFilter(FilterOperation operation, FilterSettings filterSettings) {
+        if (operation != FilterOperation.EQUAL && operation != FilterOperation.NOT_EQUAL) {
+            throw new IllegalArgumentException("Null value can be used only with " + FilterOperation.EQUAL + " and " + FilterOperation.NOT_EQUAL
+                    + " operations but was used with " + operation);
+        }
+        return new ExactNullFilter(operation == FilterOperation.EQUAL);
     }
 
     private Object toSimpleFilter(FilterOperation operation, String simpleFilter, FilterSettings filterSettings) {
