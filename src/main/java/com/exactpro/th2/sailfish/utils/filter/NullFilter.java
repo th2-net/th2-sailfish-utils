@@ -19,29 +19,26 @@ package com.exactpro.th2.sailfish.utils.filter;
 import com.exactpro.sf.aml.scriptutil.ExpressionResult;
 import com.exactpro.sf.aml.scriptutil.MvelException;
 import com.exactpro.th2.common.grpc.FilterOperation;
-import com.exactpro.th2.sailfish.utils.FilterSettings;
-import com.exactpro.th2.sailfish.utils.filter.util.FilterUtils;
-import org.jetbrains.annotations.NotNull;
 
-import java.util.Objects;
+import static com.exactpro.th2.sailfish.utils.filter.util.FilterUtils.NULL_VALUE;
 
 public class NullFilter implements IOperationFilter {
     private static final String NOT_NULL = "*";
     private static final String NULL = "#";
     private final boolean acceptNull;
-    private final FilterSettings filterSettings;
+    private final boolean checkNullValueAsEmpty;
 
-    private NullFilter(boolean acceptNull, @NotNull FilterSettings filterSettings) {
+    private NullFilter(boolean acceptNull, boolean checkNullValueAsEmpty) {
         this.acceptNull = acceptNull;
-        this.filterSettings = Objects.requireNonNull(filterSettings, "Filter settings cannot be null");
+        this.checkNullValueAsEmpty = checkNullValueAsEmpty;
     }
 
-    public static IOperationFilter nullValue(FilterSettings filterSettings) {
-        return new NullFilter(true, filterSettings);
+    public static IOperationFilter nullValue(boolean checkNullValueAsEmpty) {
+        return new NullFilter(true, checkNullValueAsEmpty);
     }
 
-    public static IOperationFilter notNullValue(FilterSettings filterSettings) {
-        return new NullFilter(false, filterSettings);
+    public static IOperationFilter notNullValue(boolean checkNullValueAsEmpty) {
+        return new NullFilter(false, checkNullValueAsEmpty);
     }
 
     @Override
@@ -51,10 +48,10 @@ public class NullFilter implements IOperationFilter {
 
     @Override
     public ExpressionResult validate(Object value) throws RuntimeException {
-        boolean result = FilterUtils.isNull(value) == acceptNull;
-        return filterSettings.isCheckNullValueAsEmpty()
-                ? ExpressionResult.create(result)
-                : ExpressionResult.create(!result);
+        if (value == NULL_VALUE) {
+            return ExpressionResult.create(checkNullValueAsEmpty == acceptNull);
+        }
+        return ExpressionResult.create(value == null == acceptNull);
     }
 
     @Override

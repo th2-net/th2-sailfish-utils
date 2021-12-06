@@ -433,19 +433,21 @@ public class ImplementationIFilterTest extends AbstractConverterTest {
 
     private static Stream<Arguments> nullFilterPairs() {
         return Stream.of(
-                Arguments.of(FilterOperation.EMPTY, StatusType.PASSED, true),
-                Arguments.of(FilterOperation.NOT_EMPTY, StatusType.PASSED, true),
                 Arguments.of(FilterOperation.EMPTY, StatusType.FAILED, false),
-                Arguments.of(FilterOperation.NOT_EMPTY, StatusType.FAILED, false)
+                Arguments.of(FilterOperation.NOT_EMPTY, StatusType.PASSED, false),
+                Arguments.of(FilterOperation.EMPTY, StatusType.PASSED, true),
+                Arguments.of(FilterOperation.NOT_EMPTY, StatusType.FAILED, true)
         );
     }
     
     @ParameterizedTest
     @MethodSource("nullFilterPairs")
     void testNullFilter(FilterOperation operation, StatusType status, boolean checkNullValueAsEmpty) {
-        Supplier<Value> value = () -> operation == FilterOperation.EMPTY ? nullValue() : getSimpleValue("test");
+        ProtoToIMessageConverter converter = new ProtoToIMessageConverter(
+                MESSAGE_FACTORY, null, DICTIONARY_URI, ProtoToIMessageConverter.createParameters().setUseMarkerForNullsInMessage(true)
+        );
         Message message = createMessageBuilder("Test")
-                .putFields("A", value.get())
+                .putFields("A", nullValue())
                 .build();
         ValueFilter filter = ValueFilter.newBuilder().setOperation(operation).build();
         MessageFilter messageFilter = MessageFilter.newBuilder()
