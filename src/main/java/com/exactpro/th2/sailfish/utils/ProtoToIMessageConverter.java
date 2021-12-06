@@ -29,6 +29,7 @@ import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 import com.exactpro.th2.common.grpc.NullValue;
+import com.exactpro.th2.common.message.MessageUtils;
 import com.exactpro.th2.sailfish.utils.filter.EqualityFilter;
 import com.exactpro.th2.sailfish.utils.filter.ExactNullFilter;
 import com.exactpro.th2.sailfish.utils.filter.IOperationFilter;
@@ -41,7 +42,6 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.exactpro.sf.aml.scriptutil.StaticUtil;
 import com.exactpro.sf.common.impl.messages.xml.configuration.JavaType;
 import com.exactpro.sf.common.messages.IMessage;
 import com.exactpro.sf.common.messages.IMetadata;
@@ -214,22 +214,25 @@ public class ProtoToIMessageConverter {
     }
 
     private Object traverseFilterField(String fieldName, ValueFilter value, FilterSettings filterSettings) {
-        if (value.hasListFilter()) {
-            return traverseCollection(fieldName, value.getListFilter(), filterSettings);
+        switch (value.getKindCase()) {
+            case SIMPLE_FILTER:
+                return toSimpleFilter(value.getOperation(), value.getSimpleFilter(), filterSettings);
+            case MESSAGE_FILTER:
+                return fromProtoFilter(value.getMessageFilter(), filterSettings, fieldName);
+            case LIST_FILTER:
+                return traverseCollection(fieldName, value.getListFilter(), filterSettings);
+            case SIMPLE_LIST:
+                if (value.getOperation() == FilterOperation.IN || value.getOperation() == FilterOperation.NOT_IN) {
+                    return new ListContainFilter(value.getOperation(), value.getSimpleList().getSimpleValuesList());
+                }
+                String exceptionMessage = String.format("The operation doesn't match the values {%s}, {%s}", value.getOperation(), value.getSimpleList());
+                throw new IllegalArgumentException(exceptionMessage);
+            case NULL_VALUE:
+                return toNullFilter(value.getOperation(), filterSettings);
+            case KIND_NOT_SET:
+            default:
+                throw new IllegalArgumentException(String.format("Value filter '%s' doesn't contain a value", MessageUtils.toJson(value)));
         }
-        if (value.hasMessageFilter()) {
-            return fromProtoFilter(value.getMessageFilter(), filterSettings, fieldName);
-        }
-        if (value.hasSimpleList()) {
-            if (value.getOperation() == FilterOperation.IN || value.getOperation() == FilterOperation.NOT_IN) {
-                return new ListContainFilter(value.getOperation(), value.getSimpleList().getSimpleValuesList());
-            }
-            throw new IllegalArgumentException(String.format("The operation doesn't match the values {%s}, {%s}", value.getOperation(), value.getSimpleList()));
-        }
-        if (value.getKindCase() == ValueFilter.KindCase.NULL_VALUE) {
-            return toNullFilter(value.getOperation(), filterSettings);
-        }
-        return toSimpleFilter(value.getOperation(), value.getSimpleFilter(), filterSettings);
     }
 
     private IOperationFilter toNullFilter(FilterOperation operation, FilterSettings filterSettings) {
