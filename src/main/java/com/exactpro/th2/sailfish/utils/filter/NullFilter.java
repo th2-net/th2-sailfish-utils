@@ -19,23 +19,29 @@ package com.exactpro.th2.sailfish.utils.filter;
 import com.exactpro.sf.aml.scriptutil.ExpressionResult;
 import com.exactpro.sf.aml.scriptutil.MvelException;
 import com.exactpro.th2.common.grpc.FilterOperation;
+import com.exactpro.th2.sailfish.utils.FilterSettings;
 import com.exactpro.th2.sailfish.utils.filter.util.FilterUtils;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.Objects;
 
 public class NullFilter implements IOperationFilter {
     private static final String NOT_NULL = "*";
     private static final String NULL = "#";
     private final boolean acceptNull;
+    private final FilterSettings filterSettings;
 
-    private NullFilter(boolean acceptNull) {
+    private NullFilter(boolean acceptNull, @NotNull FilterSettings filterSettings) {
         this.acceptNull = acceptNull;
+        this.filterSettings = Objects.requireNonNull(filterSettings, "Filter settings cannot be null");
     }
 
-    public static IOperationFilter nullValue() {
-        return new NullFilter(true);
+    public static IOperationFilter nullValue(FilterSettings filterSettings) {
+        return new NullFilter(true, filterSettings);
     }
 
-    public static IOperationFilter notNullValue() {
-        return new NullFilter(false);
+    public static IOperationFilter notNullValue(FilterSettings filterSettings) {
+        return new NullFilter(false, filterSettings);
     }
 
     @Override
@@ -45,7 +51,10 @@ public class NullFilter implements IOperationFilter {
 
     @Override
     public ExpressionResult validate(Object value) throws RuntimeException {
-        return ExpressionResult.create(FilterUtils.isNull(value) == acceptNull);
+        boolean result = FilterUtils.isNull(value) == acceptNull;
+        return filterSettings.isCheckNullValueAsEmpty()
+                ? ExpressionResult.create(result)
+                : ExpressionResult.create(!result);
     }
 
     @Override
