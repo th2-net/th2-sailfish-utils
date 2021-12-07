@@ -247,9 +247,9 @@ public class ProtoToIMessageConverter {
             case NOT_EQUAL:
                 return new EqualityFilter(simpleFilter, false);
             case EMPTY:
-                return NullFilter.nullValue();
+                return NullFilter.nullValue(filterSettings.isCheckNullValueAsEmpty());
             case NOT_EMPTY:
-                return NullFilter.notNullValue();
+                return NullFilter.notNullValue(filterSettings.isCheckNullValueAsEmpty());
             case LIKE:
             case NOT_LIKE:
                 return new RegExFilter(operation, simpleFilter);

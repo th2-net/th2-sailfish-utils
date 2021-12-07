@@ -28,6 +28,7 @@ public class FilterSettings {
 
     private double decimalPrecision;
     private Duration timePrecision = Duration.ofSeconds(0L, 0L);
+    private boolean checkNullValueAsEmpty;
 
 
     public void setDecimalPrecision(double decimalPrecision) {
@@ -47,5 +48,13 @@ public class FilterSettings {
 
     public Duration getTimePrecision() {
         return timePrecision;
+    }
+
+    public boolean isCheckNullValueAsEmpty() {
+        return checkNullValueAsEmpty;
+    }
+
+    public void setCheckNullValueAsEmpty(boolean checkNullValueAsEmpty) {
+        this.checkNullValueAsEmpty = checkNullValueAsEmpty;
     }
 }

@@ -43,6 +43,11 @@ import org.junit.jupiter.params.provider.ValueSource;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class ImplementationIFilterTest extends AbstractConverterTest {
     private static final String MESSAGE_TYPE = "TestMsg";
@@ -424,6 +429,39 @@ public class ImplementationIFilterTest extends AbstractConverterTest {
         Assertions.assertNotNull(actualFields, "Fields cannot be null");
         Assertions.assertEquals(status, actualFields.getStatus());
         Assertions.assertEquals(exceptionMessage, actualFields.getExceptionMessage());
+    }
+
+    private static Stream<Arguments> nullFilterPairs() {
+        return Stream.of(
+                Arguments.of(FilterOperation.EMPTY, StatusType.FAILED, false),
+                Arguments.of(FilterOperation.NOT_EMPTY, StatusType.PASSED, false),
+                Arguments.of(FilterOperation.EMPTY, StatusType.PASSED, true),
+                Arguments.of(FilterOperation.NOT_EMPTY, StatusType.FAILED, true)
+        );
+    }
+    
+    @ParameterizedTest
+    @MethodSource("nullFilterPairs")
+    void testNullFilter(FilterOperation operation, StatusType status, boolean checkNullValueAsEmpty) {
+        ProtoToIMessageConverter converter = new ProtoToIMessageConverter(
+                MESSAGE_FACTORY, null, DICTIONARY_URI, ProtoToIMessageConverter.createParameters().setUseMarkerForNullsInMessage(true)
+        );
+        Message message = createMessageBuilder("Test")
+                .putFields("A", nullValue())
+                .build();
+        ValueFilter filter = ValueFilter.newBuilder().setOperation(operation).build();
+        MessageFilter messageFilter = MessageFilter.newBuilder()
+                .putFields("A", filter)
+                .build();
+
+        FilterSettings filterSettings = new FilterSettings();
+        filterSettings.setCheckNullValueAsEmpty(checkNullValueAsEmpty);
+        IMessage expected = converter.fromProtoFilter(messageFilter, filterSettings,"Test");
+        IMessage actual = converter.fromProtoMessage(message, false);
+
+        ComparisonResult result = MessageComparator.compare(actual, expected, new ComparatorSettings());
+        assertNotNull(result, "Result cannot be null");
+        assertEquals(status, ComparisonUtil.getStatusType(result), () -> "Unexpected result: " + result);
     }
 
     private ComparisonResult getResult(Message actual, RootMessageFilter filter) {

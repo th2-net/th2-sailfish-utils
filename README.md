@@ -1,8 +1,13 @@
-# th2 Sailfish Utils (3.12.1)
+# th2 Sailfish Utils (3.12.2)
 
 This library contains classes to convert messages from th2 to Sailfish format and vice versa. They are used in several th2 projects to reuse Sailfish features: message comparison, codec/connect implementations, etc.
 
 ## Release Notes
+
+### 3.12.2
+
++ Added new parameter `checkNullValueAsEmpty` in the `FilterSettings` witch is used for `EMPTY` and `NOT_EMPTY` operations to check if `NULL_VALUE` value is empty. For example, if the `checkNullValueAsEmpty` parameter is:
++ `true`, then `NULL_VALUE` is equal to `EMPTY`, otherwise `NULL_VALUE` is equal to `NOT_EMPTY` 
 
 ### 3.12.1
 
