@@ -6,7 +6,9 @@ This library contains classes to convert messages from th2 to Sailfish format an
 
 ### 3.12.2
 
-+ Added validation for the `ValueFilter` value
++ Added new parameter `checkNullValueAsEmpty` in the `FilterSettings` witch is used for `EMPTY` and `NOT_EMPTY` operations to check if `NULL_VALUE` value is empty. For example, if the `checkNullValueAsEmpty` parameter is:
++ `true`, then `NULL_VALUE` is equal to `EMPTY` and `NULL_VALUE` is not equal to `NOT_EMPTY`
++ otherwise `NULL_VALUE` is not equal `EMPTY` and `NULL_VALUE` is equal to `NOT_EMPTY` 
 
 ### 3.12.1
 

@@ -20,6 +20,8 @@ import com.exactpro.sf.aml.scriptutil.ExpressionResult;
 import com.exactpro.sf.aml.scriptutil.MvelException;
 import com.exactpro.th2.common.grpc.FilterOperation;
 
+import java.util.Objects;
+
 import static com.exactpro.th2.sailfish.utils.filter.util.FilterUtils.NULL_VALUE;
 
 public class NullFilter implements IOperationFilter {
@@ -51,7 +53,7 @@ public class NullFilter implements IOperationFilter {
         if (value == NULL_VALUE) {
             return ExpressionResult.create(checkNullValueAsEmpty == acceptNull);
         }
-        return ExpressionResult.create(value == null == acceptNull);
+        return ExpressionResult.create(Objects.isNull(value) == acceptNull);
     }
 
     @Override
