@@ -44,12 +44,12 @@ public abstract class AbstractFilterWithPrecision implements IOperationFilter {
 
     @Override
     public String getCondition() {
-        return "=" + getValue();
+        return getValue() + " ± " + getPrecision();
     }
 
     @Override
     public String getCondition(Object value) {
-        return value + " (±" + getPrecision() + ")" +  getCondition() + " " + getValue();
+         return getCondition();
     }
 
     @Override

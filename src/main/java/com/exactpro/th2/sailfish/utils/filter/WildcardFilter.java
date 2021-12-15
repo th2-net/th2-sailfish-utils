@@ -61,7 +61,7 @@ public class WildcardFilter extends AbstractNotNullFilter {
 
     @Override
     public String getCondition(Object value) {
-        return value + " " + getCondition();
+        return getCondition();
     }
 
     @Override
