@@ -56,12 +56,12 @@ public class ListContainFilter extends AbstractNotNullFilter {
 
     @Override
     public String getCondition() {
-        return operation.name() + ' ' + values;
+        return operation.name() + ' ' + getValue();
     }
 
     @Override
     public String getCondition(Object value) {
-        return value + " " + getCondition();
+        return getCondition();
     }
 
     @Override

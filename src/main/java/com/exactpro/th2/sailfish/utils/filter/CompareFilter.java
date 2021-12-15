@@ -105,7 +105,7 @@ public class CompareFilter extends AbstractNotNullFilter {
 
     @Override
     public String getCondition(Object value) {
-        return value + " " +  getCondition() + " " + getValue();
+        return getCondition();
     }
 
     @Override

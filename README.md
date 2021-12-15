@@ -1,8 +1,12 @@
-# th2 Sailfish Utils (3.12.2)
+# th2 Sailfish Utils (3.12.3)
 
 This library contains classes to convert messages from th2 to Sailfish format and vice versa. They are used in several th2 projects to reuse Sailfish features: message comparison, codec/connect implementations, etc.
 
 ## Release Notes
+
+### 3.12.3
+
++ Improved condition output format for `EQ_PRECISION`, `WILDCARD`, `LIKE`, `IN`, `MORE`, `LESS` operations and their negative versions
 
 ### 3.12.2
 
