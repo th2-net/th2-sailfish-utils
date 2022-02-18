@@ -49,5 +49,11 @@
             <field name="enumInt" reference="enumIntId"/>
             <field name="nullField" type="java.math.BigDecimal"/>
         </message>
+        <message name="Enums" id="M_Enums">
+            <field name="enumInt" reference="enumIntId"/>
+            <field name="enumIntCol" reference="enumIntId" isCollection="true"/>
+            <field name="enumMsg" reference="M_Enums"/>
+            <field name="enumMsgCol" reference="M_Enums" isCollection="true"/>
+        </message>
     </messages>
 </dictionary>

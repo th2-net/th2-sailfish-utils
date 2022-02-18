@@ -28,7 +28,6 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
-import com.exactpro.sf.common.impl.messages.DefaultMessageFactory;
 import com.exactpro.sf.common.messages.IMessage;
 import com.exactpro.th2.common.grpc.ListValue;
 import com.exactpro.th2.common.grpc.Message;
@@ -97,9 +96,5 @@ class TestIMessageToProtoConverter extends AbstractConverterTest {
                     assertEquals(getListValue(getSimpleValue("0.00000000")), bd, () -> "Unexpected value: " + bd);
                 }
         );
-    }
-
-    private static IMessage createMessage(String name) {
-        return DefaultMessageFactory.getFactory().createMessage(name, "test");
     }
 }

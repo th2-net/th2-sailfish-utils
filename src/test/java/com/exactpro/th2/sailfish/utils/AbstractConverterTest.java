@@ -17,6 +17,8 @@
 package com.exactpro.th2.sailfish.utils;
 
 import com.exactpro.th2.common.grpc.FilterOperation;
+import com.exactpro.sf.common.impl.messages.DefaultMessageFactory;
+import com.exactpro.sf.common.messages.IMessage;
 import com.exactpro.th2.common.grpc.ListValue;
 import com.exactpro.th2.common.grpc.ListValueFilter;
 import com.exactpro.th2.common.grpc.Message;
@@ -94,5 +96,9 @@ public class AbstractConverterTest {
         return ValueFilter.newBuilder()
                 .setListFilter(listValueFilter)
                 .build();
+    }
+
+    protected static IMessage createMessage(String name) {
+        return DefaultMessageFactory.getFactory().createMessage(name, "test");
     }
 }
