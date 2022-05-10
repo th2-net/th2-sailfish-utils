@@ -43,7 +43,7 @@ targetCompatibility = 11
 
 dependencies {
     api platform('com.exactpro.th2:bom:3.0.0')
-    api 'com.exactpro.th2:common:3.31.3'
+    api 'com.exactpro.th2:common:3.37.2'
     api "com.exactpro.sf:sailfish-core:${sailfishVersion}"
 
     implementation "org.slf4j:slf4j-log4j12"
