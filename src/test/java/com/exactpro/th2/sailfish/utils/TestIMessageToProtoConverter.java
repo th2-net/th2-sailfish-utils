@@ -20,13 +20,20 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import com.exactpro.sf.common.impl.messages.DefaultMessageFactory;
 import com.exactpro.sf.common.messages.IMessage;
@@ -96,6 +103,41 @@ class TestIMessageToProtoConverter extends AbstractConverterTest {
                     assertNotNull(bd, () -> "Missing field in " + protoMessage);
                     assertEquals(getListValue(getSimpleValue("0.00000000")), bd, () -> "Unexpected value: " + bd);
                 }
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("times")
+    void keepsMillisecondsForTimeAndDateTime(LocalTime timePart, String expectedResult) {
+        IMessage message = createMessage("test");
+        message.addField("time", timePart);
+        message.addField("dateTime", LocalDateTime.of(LocalDate.EPOCH, timePart));
+        Message protoMessage = new IMessageToProtoConverter()
+                .toProtoMessage(message).build();
+
+        assertAll(
+                () -> {
+                    Value time = protoMessage.getFieldsMap().get("time");
+                    assertNotNull(time, () -> "Missing field in " + protoMessage);
+                    assertEquals(expectedResult, time.getSimpleValue(), () -> "Unexpected value: " + time);
+                },
+                () -> {
+                    Value dateTime = protoMessage.getFieldsMap().get("dateTime");
+                    assertNotNull(dateTime, () -> "Missing field in " + protoMessage);
+                    assertEquals("1970-01-01T" + expectedResult, dateTime.getSimpleValue(), () -> "Unexpected value: " + dateTime);
+                }
+        );
+    }
+
+    static List<Arguments> times() {
+        return List.of(
+                arguments(LocalTime.of(0, 0), "00:00:00.000"),
+                arguments(LocalTime.of(12, 0), "12:00:00.000"),
+                arguments(LocalTime.of(12, 42), "12:42:00.000"),
+                arguments(LocalTime.of(12, 42, 1), "12:42:01.000"),
+                arguments(LocalTime.of(12, 42, 1, 1_000_000), "12:42:01.001"),
+                arguments(LocalTime.of(12, 42, 1, 1_000), "12:42:01.000001"),
+                arguments(LocalTime.of(12, 42, 1, 1), "12:42:01.000000001")
         );
     }
 
