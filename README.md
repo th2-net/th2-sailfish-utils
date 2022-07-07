@@ -1,8 +1,13 @@
-# th2 Sailfish Utils (3.12.3)
+# th2 Sailfish Utils (3.12.4)
 
 This library contains classes to convert messages from th2 to Sailfish format and vice versa. They are used in several th2 projects to reuse Sailfish features: message comparison, codec/connect implementations, etc.
 
 ## Release Notes
+
+### 3.12.4
+
++ Changed conversion from IMessage to protobuf message:
+  + The format for time and date time will always have milliseconds part
 
 ### 3.12.3
 

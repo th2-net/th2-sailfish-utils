@@ -15,10 +15,21 @@
  ******************************************************************************/
 package com.exactpro.th2.sailfish.utils;
 
+import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
+import static java.time.temporal.ChronoField.HOUR_OF_DAY;
+import static java.time.temporal.ChronoField.MINUTE_OF_HOUR;
+import static java.time.temporal.ChronoField.NANO_OF_SECOND;
+import static java.time.temporal.ChronoField.SECOND_OF_MINUTE;
 import static java.util.Objects.requireNonNull;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
 import java.util.List;
+import java.util.Locale;
+import java.util.Locale.Category;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -83,13 +94,22 @@ public class IMessageToProtoConverter {
     }
 
     private Builder addSimpleValue(Object fieldValue, Builder valueBuilder) {
+        String result = toSimpleValueString(fieldValue);
+        return valueBuilder.setSimpleValue(result);
+    }
+
+    private String toSimpleValueString(Object fieldValue) {
         if (fieldValue instanceof BigDecimal) {
             BigDecimal bd = (BigDecimal)fieldValue;
-            valueBuilder.setSimpleValue((parameters.isStripTrailingZeros() ? bd.stripTrailingZeros() : bd).toPlainString());
-        } else {
-            valueBuilder.setSimpleValue(fieldValue.toString());
+            return (parameters.isStripTrailingZeros() ? bd.stripTrailingZeros() : bd).toPlainString();
         }
-        return valueBuilder;
+        if (fieldValue instanceof LocalDateTime) {
+            return ((LocalDateTime)fieldValue).format(parameters.getDateTimeFormatter());
+        }
+        if (fieldValue instanceof LocalTime) {
+            return ((LocalTime)fieldValue).format(parameters.getTimeFormatter());
+        }
+        return fieldValue.toString();
     }
 
     private Message convertComplex(IMessage fieldValue) {
@@ -108,18 +128,53 @@ public class IMessageToProtoConverter {
 
     public static class Parameters {
         public static final Parameters DEFAULT = parametersBuilder().build();
+
         private final boolean stripTrailingZeros;
 
-        private Parameters(boolean stripTrailingZeros) {
+        private final DateTimeFormatter dateTimeFormatter;
+
+        private final DateTimeFormatter timeFormatter;
+
+        private Parameters(boolean stripTrailingZeros, DateTimeFormatter dateTimeFormatter, DateTimeFormatter timeFormatter) {
             this.stripTrailingZeros = stripTrailingZeros;
+            this.dateTimeFormatter = requireNonNull(dateTimeFormatter, "'Date time formatter' parameter");
+            this.timeFormatter = requireNonNull(timeFormatter, "'Time formatter' parameter");
         }
 
         public boolean isStripTrailingZeros() {
             return stripTrailingZeros;
         }
 
+        public DateTimeFormatter getDateTimeFormatter() {
+            return dateTimeFormatter;
+        }
+
+        public DateTimeFormatter getTimeFormatter() {
+            return timeFormatter;
+        }
+
         public static class Builder {
+            private static final DateTimeFormatter TIME_FORMATTER = new DateTimeFormatterBuilder()
+                    .parseCaseInsensitive()
+                    .appendValue(HOUR_OF_DAY, 2)
+                    .appendLiteral(':')
+                    .appendValue(MINUTE_OF_HOUR, 2)
+                    .appendLiteral(':')
+                    .appendValue(SECOND_OF_MINUTE, 2)
+                    .appendFraction(NANO_OF_SECOND, 3, 9, true)
+                    .toFormatter(Locale.getDefault(Category.FORMAT));
+            private static final DateTimeFormatter DATE_TIME_FORMATTER = new DateTimeFormatterBuilder()
+                    .parseCaseInsensitive()
+                    .append(ISO_LOCAL_DATE)
+                    .appendLiteral('T')
+                    .append(TIME_FORMATTER)
+                    .toFormatter(Locale.getDefault(Category.FORMAT));
+
             private boolean stripTrailingZeros;
+
+            private DateTimeFormatter dateTimeFormatter = DATE_TIME_FORMATTER;
+
+            private DateTimeFormatter timeFormatter = TIME_FORMATTER;
 
             private Builder() {
             }
@@ -129,8 +184,18 @@ public class IMessageToProtoConverter {
                 return this;
             }
 
+            public Builder setDateTimeFormatter(DateTimeFormatter dateTimeFormatter) {
+                this.dateTimeFormatter = dateTimeFormatter;
+                return this;
+            }
+
+            public Builder setTimeFormatter(DateTimeFormatter timeFormatter) {
+                this.timeFormatter = timeFormatter;
+                return this;
+            }
+
             public Parameters build() {
-                return new Parameters(stripTrailingZeros);
+                return new Parameters(stripTrailingZeros, dateTimeFormatter, timeFormatter);
             }
         }
     }
