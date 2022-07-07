@@ -154,18 +154,6 @@ public class IMessageToProtoConverter {
         }
 
         public static class Builder {
-            private static final DateTimeFormatter DATE_TIME_FORMATTER = new DateTimeFormatterBuilder()
-                    .parseCaseInsensitive()
-                    .append(ISO_LOCAL_DATE)
-                    .appendLiteral('T')
-                    .appendValue(HOUR_OF_DAY, 2)
-                    .appendLiteral(':')
-                    .appendValue(MINUTE_OF_HOUR, 2)
-                    .appendLiteral(':')
-                    .appendValue(SECOND_OF_MINUTE, 2)
-                    .appendFraction(NANO_OF_SECOND, 3, 9, true)
-                    .toFormatter(Locale.getDefault(Category.FORMAT));
-
             private static final DateTimeFormatter TIME_FORMATTER = new DateTimeFormatterBuilder()
                     .parseCaseInsensitive()
                     .appendValue(HOUR_OF_DAY, 2)
@@ -175,6 +163,13 @@ public class IMessageToProtoConverter {
                     .appendValue(SECOND_OF_MINUTE, 2)
                     .appendFraction(NANO_OF_SECOND, 3, 9, true)
                     .toFormatter(Locale.getDefault(Category.FORMAT));
+            private static final DateTimeFormatter DATE_TIME_FORMATTER = new DateTimeFormatterBuilder()
+                    .parseCaseInsensitive()
+                    .append(ISO_LOCAL_DATE)
+                    .appendLiteral('T')
+                    .append(TIME_FORMATTER)
+                    .toFormatter(Locale.getDefault(Category.FORMAT));
+
             private boolean stripTrailingZeros;
 
             private DateTimeFormatter dateTimeFormatter = DATE_TIME_FORMATTER;
