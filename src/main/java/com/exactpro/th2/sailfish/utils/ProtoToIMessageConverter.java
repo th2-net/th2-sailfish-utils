@@ -353,10 +353,15 @@ public class ProtoToIMessageConverter {
     }
 
     private void traverseField(IMessage message, String fieldName, Value value, @NotNull IFieldStructure fieldStructure) {
-        Object convertedValue = fieldStructure.isComplex()
-                ? processComplex(value, fieldStructure)
-                : convertSimple(value, fieldStructure);
-        message.addField(fieldName, convertedValue);
+        KindCase kindCase = value.getKindCase();
+        if (kindCase == KindCase.NULL_VALUE || kindCase == KindCase.KIND_NOT_SET) {
+            message.addField(fieldName, parameters.isUseMarkerForNullsInMessage() ? FilterUtils.NULL_VALUE : null);
+        } else {
+            Object convertedValue = fieldStructure.isComplex()
+                    ? processComplex(value, fieldStructure)
+                    : convertSimple(value, fieldStructure);
+            message.addField(fieldName, convertedValue);
+        }
     }
 
     private Object convertSimple(Value listEvent, IFieldStructure fieldStructure) {
