@@ -62,19 +62,17 @@ repositories {
             ignoreGradleMetadataRedirection()
         }
     }
-    mavenCentral {
-        metadataSources {
-            mavenPom()
-            artifact()
-        }
-    }
+    mavenCentral()
     mavenLocal()
 
     configurations.all {
-        resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
-        resolutionStrategy.cacheDynamicVersionsFor 0, 'seconds'
+        resolutionStrategy {
+            cacheChangingModulesFor 0, 'seconds'
+            cacheDynamicVersionsFor 0, 'seconds'
+        }
     }
 }
+
 
 group = 'com.exactpro.th2'
 version = release_version
@@ -121,24 +119,24 @@ jar {
 tasks.withType(PublishToMavenRepository) {
     onlyIf {
         (repository == publishing.repositories.nexusRepository &&
-                project.hasProperty('nexus_user') &&
-                project.hasProperty('nexus_password') &&
-                project.hasProperty('nexus_url')) ||
-                (repository == publishing.repositories.sonatype &&
-                        project.hasProperty('sonatypeUsername') &&
-                        project.hasProperty('sonatypePassword')) ||
-                (repository == publishing.repositories.localRepo)
+            project.hasProperty('nexus_user') &&
+            project.hasProperty('nexus_password') &&
+            project.hasProperty('nexus_url')) ||
+        (repository == publishing.repositories.sonatype &&
+            project.hasProperty('sonatypeUsername') &&
+            project.hasProperty('sonatypePassword')) ||
+        (repository == publishing.repositories.localRepo)
     }
 }
 tasks.withType(Sign) {
     onlyIf { project.hasProperty('signingKey') &&
-            project.hasProperty('signingPassword')
+        project.hasProperty('signingPassword')
     }
 }
 // disable running task 'initializeSonatypeStagingRepository' on a gitlab
 tasks.whenTaskAdded {task ->
     if(task.name.equals('initializeSonatypeStagingRepository') &&
-            !(project.hasProperty('sonatypeUsername') && project.hasProperty('sonatypePassword'))
+        !(project.hasProperty('sonatypeUsername') && project.hasProperty('sonatypePassword'))
     ) {
         task.enabled = false
     }
@@ -149,29 +147,29 @@ publishing {
         mavenJava(MavenPublication) {
             from(components.java)
             pom {
-                name = rootProject.name
-                packaging = 'jar'
-                description = rootProject.description
+              name = rootProject.name
+              packaging = 'jar'
+              description = rootProject.description
+              url = vcs_url
+              scm {
                 url = vcs_url
-                scm {
-                    url = vcs_url
+              }
+              licenses {
+                license {
+                  name = 'The Apache License, Version 2.0'
+                  url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
                 }
-                licenses {
-                    license {
-                        name = 'The Apache License, Version 2.0'
-                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-                    }
+              }
+              developers {
+                developer {
+                  id = 'developer'
+                  name = 'developer'
+                  email = 'developer@exactpro.com'
                 }
-                developers {
-                    developer {
-                        id = 'developer'
-                        name = 'developer'
-                        email = 'developer@exactpro.com'
-                    }
-                }
-                scm {
-                    url = vcs_url
-                }
+              }
+              scm {
+                url = vcs_url
+              }
             }
         }
     }
