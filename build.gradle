@@ -16,7 +16,6 @@ ext.excludeSailfish = { rcd ->
     rcd.excludeModule("com.exactpro.sf", "sailfish-core")
     rcd.excludeModule("com.exactpro.sf", "sailfish-common")
     rcd.excludeModule("com.exactpro.sf", "sailfish-rest-api-client")
-    rcd.excludeModule("com.exactpro.sf", "service-http")
 }
 
 repositories {
