@@ -80,7 +80,7 @@ sourceCompatibility = 11
 targetCompatibility = 11
 
 dependencies {
-    api platform('com.exactpro.th2:bom:4.0.2')
+    api platform('com.exactpro.th2:bom:4.1.0')
     api 'com.exactpro.th2:common:3.41.1'
     api "com.exactpro.sf:sailfish-core:${sailfishVersion}"
 
