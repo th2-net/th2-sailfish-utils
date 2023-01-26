@@ -10,13 +10,7 @@ plugins {
 ext {
     sharedDir           = file("${project.rootDir}/shared")
 
-    sailfishVersion = '3.3.51'
-}
-
-ext.excludeSailfish = { rcd ->
-    rcd.excludeModule("com.exactpro.sf", "sailfish-core")
-    rcd.excludeModule("com.exactpro.sf", "sailfish-common")
-    rcd.excludeModule("com.exactpro.sf", "sailfish-rest-api-client")
+    sailfishVersion = '3.3.54'
 }
 
 repositories {
@@ -28,29 +22,10 @@ repositories {
     maven {
         name 'Sonatype_snapshots'
         url 'https://s01.oss.sonatype.org/content/repositories/snapshots/'
-        content {
-            excludeSailfish(it)
-        }
-    }
-
-    // ignoreGradleMetadataRedirection is used for sonatype because
-    // Sailfish dependencies have constrains that interfere with our BOM
-    // so we exclude Gradle metadata for this repositories.
-    // We've checked these versions - they are compatible and safe to use
-    maven {
-        name 'Sonatype_snapshots'
-        url 'https://s01.oss.sonatype.org/content/repositories/snapshots/'
         metadataSources {
             mavenPom()
             artifact()
             ignoreGradleMetadataRedirection()
-        }
-    }
-    maven {
-        name 'Sonatype_releases'
-        url 'https://s01.oss.sonatype.org/content/repositories/releases/'
-        content {
-            excludeSailfish(it)
         }
     }
     maven {

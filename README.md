@@ -6,7 +6,7 @@ This library contains classes to convert messages from th2 to Sailfish format an
 
 ### 3.14.0
 
-Sailfish version is updated from `3.3.11` to `3.3.51`
+Sailfish version is updated from `3.3.11` to `3.3.54`
 + Versions for dependencies with vulnerabilities was updated:
   + BOM `4.0.1` -> `4.1.0`
   + common `3.41.0` -> `3.44.0`
