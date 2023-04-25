@@ -1,8 +1,17 @@
-# th2 Sailfish Utils (3.14.0)
+# th2 Sailfish Utils (4.0.0)
 
 This library contains classes to convert messages from th2 to Sailfish format and vice versa. They are used in several th2 projects to reuse Sailfish features: message comparison, codec/connect implementations, etc.
 
 ## Release Notes
+
+### 4.0.0
+
+Implemented converters for th2 transport protocol
+
+Sailfish version is updated from `3.3.54` to `3.3.93`
++ Versions for dependencies with vulnerabilities was updated:
+  + BOM `4.1.0` -> `4.2.0`
+  + common `3.44.0` -> `5.2.0`
 
 ### 3.14.0
 

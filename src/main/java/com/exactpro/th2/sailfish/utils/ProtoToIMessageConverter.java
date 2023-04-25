@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,6 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.exactpro.sf.aml.scriptutil.StaticUtil;
 import com.exactpro.sf.common.impl.messages.xml.configuration.JavaType;
 import com.exactpro.sf.common.messages.IMessage;
 import com.exactpro.sf.common.messages.IMetadata;
@@ -227,12 +226,12 @@ public class ProtoToIMessageConverter {
             throw new IllegalArgumentException(String.format("The operation doesn't match the values {%s}, {%s}", value.getOperation(), value.getSimpleList()));
         }
         if (value.getKindCase() == ValueFilter.KindCase.NULL_VALUE) {
-            return toNullFilter(value.getOperation(), filterSettings);
+            return toNullFilter(value.getOperation());
         }
         return toSimpleFilter(value.getOperation(), value.getSimpleFilter(), filterSettings);
     }
 
-    private IOperationFilter toNullFilter(FilterOperation operation, FilterSettings filterSettings) {
+    private IOperationFilter toNullFilter(FilterOperation operation) {
         if (operation != FilterOperation.EQUAL && operation != FilterOperation.NOT_EQUAL) {
             throw new IllegalArgumentException("Null value can be used only with " + FilterOperation.EQUAL + " and " + FilterOperation.NOT_EQUAL
                     + " operations but was used with " + operation);

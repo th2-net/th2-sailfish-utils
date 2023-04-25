@@ -2,23 +2,18 @@ plugins {
     id 'java'
     id 'java-library'
     id 'maven-publish'
+    id 'org.jetbrains.kotlin.jvm' version "${kotlin_version}"
     id "io.github.gradle-nexus.publish-plugin" version "1.1.0"
     id 'signing'
     id "org.owasp.dependencycheck" version "7.4.4"
+    id "me.champeau.jmh" version "0.6.8"
 }
 
 ext {
-    sharedDir           = file("${project.rootDir}/shared")
-
-    sailfishVersion = '3.3.54'
+    sailfishVersion = '3.3.93'
 }
 
 repositories {
-    maven {
-        name 'MavenLocal'
-        url sharedDir
-    }
-
     maven {
         name 'Sonatype_snapshots'
         url 'https://s01.oss.sonatype.org/content/repositories/snapshots/'
@@ -40,7 +35,7 @@ repositories {
     mavenCentral()
     mavenLocal()
 
-    configurations.all {
+    configurations.configureEach {
         resolutionStrategy {
             cacheChangingModulesFor 0, 'seconds'
             cacheDynamicVersionsFor 0, 'seconds'
@@ -56,24 +51,38 @@ sourceCompatibility = 11
 targetCompatibility = 11
 
 dependencies {
-    api platform('com.exactpro.th2:bom:4.1.0')
-    api 'com.exactpro.th2:common:3.44.0'
+    api platform('com.exactpro.th2:bom:4.2.0')
+    api 'com.exactpro.th2:common:5.2.0-separate-executor-+'
     api "com.exactpro.sf:sailfish-core:${sailfishVersion}"
 
     implementation "org.slf4j:slf4j-api"
     implementation "com.google.protobuf:protobuf-java-util"
 
     // Use JUnit Jupiter API for testing.
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.9.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.9.2'
+    testImplementation "org.jetbrains.kotlin:kotlin-test-junit:${kotlin_version}"
 
+    jmh 'org.openjdk.jmh:jmh-core:1.36'
+    jmh 'org.openjdk.jmh:jmh-generator-annprocess:1.36'
 
     testImplementation 'org.openjdk.jmh:jmh-core:1.35'
     testAnnotationProcessor 'org.openjdk.jmh:jmh-generator-annprocess:1.35'
 }
 
+compileKotlin {
+    kotlinOptions.jvmTarget = "11"
+}
+
 java {
     withJavadocJar()
     withSourcesJar()
+}
+
+test {
+    useJUnitPlatform()
+    testLogging {
+        showStandardStreams = true
+    }
 }
 
 jar {
@@ -90,6 +99,10 @@ jar {
     }
 }
 
+jmhJar {
+    zip64 = true
+}
+
 // conditionals for publications
 tasks.withType(PublishToMavenRepository) {
     onlyIf {
@@ -99,8 +112,7 @@ tasks.withType(PublishToMavenRepository) {
             project.hasProperty('nexus_url')) ||
         (repository == publishing.repositories.sonatype &&
             project.hasProperty('sonatypeUsername') &&
-            project.hasProperty('sonatypePassword')) ||
-        (repository == publishing.repositories.localRepo)
+            project.hasProperty('sonatypePassword'))
     }
 }
 tasks.withType(Sign) {
@@ -149,11 +161,7 @@ publishing {
         }
     }
     repositories {
-        maven {
-            name = 'localRepo'
-            url = sharedDir
-        }
-//Nexus repo to publish from gitlab
+        //Nexus repo to publish from gitlab
         maven {
             name = 'nexusRepository'
             credentials {

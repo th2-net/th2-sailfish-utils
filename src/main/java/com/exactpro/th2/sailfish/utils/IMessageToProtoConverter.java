@@ -1,5 +1,5 @@
-/******************************************************************************
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+/*
+ * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- ******************************************************************************/
+ */
 package com.exactpro.th2.sailfish.utils;
 
 import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
@@ -78,17 +78,15 @@ public class IMessageToProtoConverter {
     @NotNull
     private ListValue convertToListValue(Object fieldValue) {
         ListValue.Builder listBuilder = ListValue.newBuilder();
-        var fieldList = (List<?>)fieldValue;
+        var fieldList = (List<?>) fieldValue;
         if (!fieldList.isEmpty() && fieldList.get(0) instanceof IMessage) {
             fieldList.forEach(message -> listBuilder.addValues(
-                            Value.newBuilder()
-                            .setMessageValue(convertComplex((IMessage)message))
+                    Value.newBuilder()
+                            .setMessageValue(convertComplex((IMessage) message))
                             .build()
-                    ));
+            ));
         } else {
-            fieldList.forEach(value -> listBuilder.addValues(
-                            addSimpleValue(value, Value.newBuilder())
-                    ));
+            fieldList.forEach(value -> listBuilder.addValues(addSimpleValue(value, Value.newBuilder())));
         }
         return listBuilder.build();
     }
@@ -100,23 +98,22 @@ public class IMessageToProtoConverter {
 
     private String toSimpleValueString(Object fieldValue) {
         if (fieldValue instanceof BigDecimal) {
-            BigDecimal bd = (BigDecimal)fieldValue;
+            BigDecimal bd = (BigDecimal) fieldValue;
             return (parameters.isStripTrailingZeros() ? bd.stripTrailingZeros() : bd).toPlainString();
         }
         if (fieldValue instanceof LocalDateTime) {
-            return ((LocalDateTime)fieldValue).format(parameters.getDateTimeFormatter());
+            return ((LocalDateTime) fieldValue).format(parameters.getDateTimeFormatter());
         }
         if (fieldValue instanceof LocalTime) {
-            return ((LocalTime)fieldValue).format(parameters.getTimeFormatter());
+            return ((LocalTime) fieldValue).format(parameters.getTimeFormatter());
         }
         return fieldValue.toString();
     }
 
     private Message convertComplex(IMessage fieldValue) {
-        IMessage nestedMessage = fieldValue;
         Message.Builder nestedMessageBuilder = Message.newBuilder();
-        for (String fieldName : nestedMessage.getFieldNames()) {
-            Value convertedValue = convertToValue(nestedMessage.getField(fieldName));
+        for (String fieldName : fieldValue.getFieldNames()) {
+            Value convertedValue = convertToValue(fieldValue.getField(fieldName));
             nestedMessageBuilder.putFields(fieldName, convertedValue);
         }
         return nestedMessageBuilder.build();

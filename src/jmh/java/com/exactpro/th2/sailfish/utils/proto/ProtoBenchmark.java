@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.exactpro.th2.sailfish.utils;
+package com.exactpro.th2.sailfish.utils.proto;
 
 import com.exactpro.sf.common.messages.IMessage;
 import com.exactpro.sf.common.messages.structures.IDictionaryStructure;
@@ -22,6 +22,8 @@ import com.exactpro.sf.comparison.ComparatorSettings;
 import com.exactpro.sf.comparison.ComparisonResult;
 import com.exactpro.sf.configuration.suri.SailfishURI;
 import com.exactpro.th2.common.grpc.*;
+import com.exactpro.th2.sailfish.utils.MessageWrapper;
+import com.exactpro.th2.sailfish.utils.ProtoToIMessageConverter;
 import com.exactpro.th2.sailfish.utils.factory.DefaultMessageFactoryProxy;
 import com.google.common.collect.ImmutableList;
 import org.openjdk.jmh.annotations.*;
@@ -47,8 +49,8 @@ import static com.exactpro.sf.comparison.MessageComparator.compare;
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
 @Warmup(iterations = 5)
 @Fork(1)
-public class SampleBenchmark {
-    public static final Logger LOGGER = LoggerFactory.getLogger(SampleBenchmark.class);
+public class ProtoBenchmark {
+    public static final Logger LOGGER = LoggerFactory.getLogger(ProtoBenchmark.class);
 
     @org.openjdk.jmh.annotations.State(Scope.Benchmark)
     public static class StateMy{
@@ -72,7 +74,7 @@ public class SampleBenchmark {
 
     public static void main(String[] args) throws RunnerException {
         Options opt = new OptionsBuilder()
-                .include(SampleBenchmark.class.getSimpleName()).measurementIterations(10).build();
+                .include(ProtoBenchmark.class.getSimpleName()).measurementIterations(10).build();
 
         new Runner(opt).run();
     }
