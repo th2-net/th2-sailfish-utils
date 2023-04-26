@@ -55,7 +55,7 @@ class IMessageToTransportConverter @JvmOverloads constructor(private val paramet
         else -> toString()
     }
 
-    private fun IMessage.toTransportSubMessage(): MutableMap<String, Any> = mutableMapOf<String, Any>().apply {
+    private fun IMessage.toTransportSubMessage(): MutableMap<String, Any> = hashMapOf<String, Any>().apply {
         fieldNames.forEach { fieldName ->
             put(fieldName, getField<Any?>(fieldName).toTransport())
         }
