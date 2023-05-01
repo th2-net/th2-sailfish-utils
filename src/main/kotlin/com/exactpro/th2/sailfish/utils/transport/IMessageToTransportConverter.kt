@@ -34,7 +34,7 @@ class IMessageToTransportConverter @JvmOverloads constructor(private val paramet
         }
     }
 
-    private fun Any.toTransport(): Any = when (this) {
+    fun Any.toTransport(): Any = when (this) {
         is IMessage -> toTransportSubMessage()
         is List<*> -> toTransportList()
         else -> toTransportString()

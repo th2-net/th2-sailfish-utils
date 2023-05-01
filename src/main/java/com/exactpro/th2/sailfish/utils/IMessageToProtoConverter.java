@@ -61,7 +61,7 @@ public class IMessageToProtoConverter {
         return builder;
     }
 
-    private Value convertToValue(Object fieldValue) {
+    public Value convertToValue(Object fieldValue) {
         Value.Builder valueBuilder = Value.newBuilder();
         if (fieldValue instanceof IMessage) {
             Message nestedMessage = convertComplex((IMessage) fieldValue);

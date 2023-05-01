@@ -67,6 +67,15 @@ class TransportToIMessageConverter @JvmOverloads constructor(
         }
     }
 
+    fun fromTransport(
+        value: Any,
+        fieldStructure: IFieldStructure
+    ): Any? = if (fieldStructure.isComplex) {
+        processComplex(value, fieldStructure)
+    } else {
+        value.convertSimple(fieldStructure)
+    }
+
     private fun ParsedMessage.convertByDictionary(dictionary: IDictionaryStructure): IMessage {
         return dictionary.messages[type]?.let { messageStructure ->
             try {
@@ -103,13 +112,6 @@ class TransportToIMessageConverter @JvmOverloads constructor(
                     ?: error("Field '$fieldName' hasn't been found in message structure: ${parentStructure.name}")
                 try {
                     runCatching {
-                        val convertedValue = if (fieldStructure.isComplex) {
-                            processComplex(fieldValue, fieldStructure)
-                        } else {
-                            fieldValue.convertSimple(fieldStructure)
-                        }
-                        addField(fieldName, convertedValue)
-
                         traverseField(this, fieldName, fieldValue, fieldStructure)
                     }.onFailure {
                         throw MessageConvertException(fieldStructure.name, it)
@@ -158,10 +160,7 @@ class TransportToIMessageConverter @JvmOverloads constructor(
         value: Any,
         fieldStructure: IFieldStructure
     ) {
-        val convertedValue =
-            (if (fieldStructure.isComplex) processComplex(value, fieldStructure) else value.convertSimple(
-                fieldStructure
-            ))
+        val convertedValue = fromTransport(value, fieldStructure)
         message.addField(fieldName, convertedValue)
     }
 

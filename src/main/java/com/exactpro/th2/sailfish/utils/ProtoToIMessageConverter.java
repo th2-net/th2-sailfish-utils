@@ -212,6 +212,12 @@ public class ProtoToIMessageConverter {
         return fromMetadataFilter(filter, FilterSettings.DEFAULT_FILTER, messageName);
     }
 
+    public Object convertFromValue(Value value, @NotNull IFieldStructure fieldStructure) {
+        return fieldStructure.isComplex()
+            ? processComplex(value, fieldStructure)
+            : convertSimple(value, fieldStructure);
+    }
+
     private Object traverseFilterField(String fieldName, ValueFilter value, FilterSettings filterSettings) {
         if (value.hasListFilter()) {
             return traverseCollection(fieldName, value.getListFilter(), filterSettings);
@@ -352,9 +358,7 @@ public class ProtoToIMessageConverter {
     }
 
     private void traverseField(IMessage message, String fieldName, Value value, @NotNull IFieldStructure fieldStructure) {
-        Object convertedValue = fieldStructure.isComplex()
-                ? processComplex(value, fieldStructure)
-                : convertSimple(value, fieldStructure);
+        Object convertedValue = convertFromValue(value, fieldStructure);
         message.addField(fieldName, convertedValue);
     }
 
