@@ -52,7 +52,7 @@ targetCompatibility = 11
 
 dependencies {
     api platform('com.exactpro.th2:bom:4.2.0')
-    api 'com.exactpro.th2:common:5.2.0-separate-executor-+'
+    api 'com.exactpro.th2:common:5.2.0-json-raw-body-5013360770-295ca31-SNAPSHOT'
     api "com.exactpro.sf:sailfish-core:${sailfishVersion}"
 
     implementation "org.slf4j:slf4j-api"
@@ -88,13 +88,13 @@ test {
 jar {
     manifest {
         attributes(
-                'Created-By':               "${System.getProperty('java.version')} (${System.getProperty('java.vendor')})",
-                'Specification-Title':      '',
-                'Specification-Vendor':     'Exactpro Systems LLC',
-                'Implementation-Title':     project.archivesBaseName,
-                'Implementation-Vendor':    'Exactpro Systems LLC',
+                'Created-By': "${System.getProperty('java.version')} (${System.getProperty('java.vendor')})",
+                'Specification-Title': '',
+                'Specification-Vendor': 'Exactpro Systems LLC',
+                'Implementation-Title': project.archivesBaseName,
+                'Implementation-Vendor': 'Exactpro Systems LLC',
                 'Implementation-Vendor-Id': 'com.exactpro',
-                'Implementation-Version':   project.version
+                'Implementation-Version': project.version
         )
     }
 }
@@ -107,23 +107,24 @@ jmhJar {
 tasks.withType(PublishToMavenRepository) {
     onlyIf {
         (repository == publishing.repositories.nexusRepository &&
-            project.hasProperty('nexus_user') &&
-            project.hasProperty('nexus_password') &&
-            project.hasProperty('nexus_url')) ||
-        (repository == publishing.repositories.sonatype &&
-            project.hasProperty('sonatypeUsername') &&
-            project.hasProperty('sonatypePassword'))
+                project.hasProperty('nexus_user') &&
+                project.hasProperty('nexus_password') &&
+                project.hasProperty('nexus_url')) ||
+                (repository == publishing.repositories.sonatype &&
+                        project.hasProperty('sonatypeUsername') &&
+                        project.hasProperty('sonatypePassword'))
     }
 }
 tasks.withType(Sign) {
-    onlyIf { project.hasProperty('signingKey') &&
-        project.hasProperty('signingPassword')
+    onlyIf {
+        project.hasProperty('signingKey') &&
+                project.hasProperty('signingPassword')
     }
 }
 // disable running task 'initializeSonatypeStagingRepository' on a gitlab
-tasks.whenTaskAdded {task ->
-    if(task.name.equals('initializeSonatypeStagingRepository') &&
-        !(project.hasProperty('sonatypeUsername') && project.hasProperty('sonatypePassword'))
+tasks.whenTaskAdded { task ->
+    if (task.name.equals('initializeSonatypeStagingRepository') &&
+            !(project.hasProperty('sonatypeUsername') && project.hasProperty('sonatypePassword'))
     ) {
         task.enabled = false
     }
@@ -134,29 +135,29 @@ publishing {
         mavenJava(MavenPublication) {
             from(components.java)
             pom {
-              name = rootProject.name
-              packaging = 'jar'
-              description = rootProject.description
-              url = vcs_url
-              scm {
+                name = rootProject.name
+                packaging = 'jar'
+                description = rootProject.description
                 url = vcs_url
-              }
-              licenses {
-                license {
-                  name = 'The Apache License, Version 2.0'
-                  url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                scm {
+                    url = vcs_url
                 }
-              }
-              developers {
-                developer {
-                  id = 'developer'
-                  name = 'developer'
-                  email = 'developer@exactpro.com'
+                licenses {
+                    license {
+                        name = 'The Apache License, Version 2.0'
+                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
                 }
-              }
-              scm {
-                url = vcs_url
-              }
+                developers {
+                    developer {
+                        id = 'developer'
+                        name = 'developer'
+                        email = 'developer@exactpro.com'
+                    }
+                }
+                scm {
+                    url = vcs_url
+                }
             }
         }
     }
@@ -194,13 +195,13 @@ test {
     useJUnitPlatform()
 }
 
-dependencyLocking {    
+dependencyLocking {
     lockAllConfigurations()
 }
 
 dependencyCheck {
-    formats=['SARIF', 'JSON', 'HTML']
-    failBuildOnCVSS=5
+    formats = ['SARIF', 'JSON', 'HTML']
+    failBuildOnCVSS = 5
 
     analyzers {
         assemblyEnabled = false

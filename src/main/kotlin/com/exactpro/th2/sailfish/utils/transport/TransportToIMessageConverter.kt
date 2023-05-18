@@ -22,7 +22,20 @@ import com.exactpro.sf.common.messages.structures.IDictionaryStructure
 import com.exactpro.sf.common.messages.structures.IFieldStructure
 import com.exactpro.sf.comparison.conversion.ConversionException
 import com.exactpro.sf.comparison.conversion.IConverter
-import com.exactpro.sf.comparison.conversion.impl.*
+import com.exactpro.sf.comparison.conversion.MultiConverter
+import com.exactpro.sf.comparison.conversion.impl.BigDecimalConverter
+import com.exactpro.sf.comparison.conversion.impl.BooleanConverter
+import com.exactpro.sf.comparison.conversion.impl.ByteConverter
+import com.exactpro.sf.comparison.conversion.impl.CharacterConverter
+import com.exactpro.sf.comparison.conversion.impl.DoubleConverter
+import com.exactpro.sf.comparison.conversion.impl.FloatConverter
+import com.exactpro.sf.comparison.conversion.impl.IntegerConverter
+import com.exactpro.sf.comparison.conversion.impl.LocalDateConverter
+import com.exactpro.sf.comparison.conversion.impl.LocalDateTimeConverter
+import com.exactpro.sf.comparison.conversion.impl.LocalTimeConverter
+import com.exactpro.sf.comparison.conversion.impl.LongConverter
+import com.exactpro.sf.comparison.conversion.impl.ShortConverter
+import com.exactpro.sf.comparison.conversion.impl.StringConverter
 import com.exactpro.sf.configuration.suri.SailfishURI
 import com.exactpro.sf.externalapi.IMessageFactoryProxy
 import com.exactpro.th2.common.schema.message.impl.rabbitmq.transport.ParsedMessage
@@ -139,7 +152,7 @@ class TransportToIMessageConverter @JvmOverloads constructor(
             is String -> this
             is Map<*, *> -> convertWithoutDictionary(fieldName)
             is List<*> -> convertList(fieldName)
-            else -> error("The field '$fieldName' cannot be traversed, because it has an unrecognized type '${fieldName::class.java}'")
+            else -> MultiConverter.convert(this, String::class.java)
         }
     }
 
@@ -265,6 +278,7 @@ class TransportToIMessageConverter @JvmOverloads constructor(
         private fun <T> convertJavaType(value: Any, javaType: JavaType): T {
             val converter = CONVERTERS[javaType]
                 ?: throw ConversionException("No converter for type: " + javaType.value())
+            @Suppress("UNCHECKED_CAST")
             return converter.convert(value) as T
         }
     }
