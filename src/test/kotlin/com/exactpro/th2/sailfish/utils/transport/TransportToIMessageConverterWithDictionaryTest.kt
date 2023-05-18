@@ -78,7 +78,7 @@ internal class TransportToIMessageConverterWithDictionaryTest : AbstractTranspor
                 converter.fromTransport(
                     BOOK,
                     SESSION_GROUP,
-                    ParsedMessage.newSoftMutable().apply { type = "SomeUnknownMessage" },
+                    ParsedMessage.newMutable().apply { type = "SomeUnknownMessage" },
                     true
                 )
             },
@@ -102,7 +102,7 @@ internal class TransportToIMessageConverterWithDictionaryTest : AbstractTranspor
         val exception = Assertions.assertThrows(
             MessageConvertException::class.java,
             {
-                val message = ParsedMessage.newSoftMutable().apply {
+                val message = ParsedMessage.newMutable().apply {
                     type = "RootWithNestedComplex"
                     body["Fake"] = "fake"
                 }
@@ -121,7 +121,7 @@ internal class TransportToIMessageConverterWithDictionaryTest : AbstractTranspor
         val exception = Assertions.assertThrows(
             MessageConvertException::class.java,
             {
-                val message = ParsedMessage.newSoftMutable().apply {
+                val message = ParsedMessage.newMutable().apply {
                     type = "RootWithNestedComplex"
                     body["complex"] = mapOf("Fake" to "fake")
                 }
@@ -140,7 +140,7 @@ internal class TransportToIMessageConverterWithDictionaryTest : AbstractTranspor
         val exception = Assertions.assertThrows(
             MessageConvertException::class.java,
             {
-                val message = ParsedMessage.newSoftMutable().apply {
+                val message = ParsedMessage.newMutable().apply {
                     type = "RootWithNestedComplex"
                     body["msgCollection"] = listOf(
                         mapOf("field1" to "field1"),
@@ -162,7 +162,7 @@ internal class TransportToIMessageConverterWithDictionaryTest : AbstractTranspor
         val exception = Assertions.assertThrows(
             MessageConvertException::class.java,
             {
-                val message = ParsedMessage.newSoftMutable().apply {
+                val message = ParsedMessage.newMutable().apply {
                     type = "RootWithNestedComplex"
                     body["simpleCollection"] = listOf("1", "abc")
                 }
@@ -181,7 +181,7 @@ internal class TransportToIMessageConverterWithDictionaryTest : AbstractTranspor
         val exception = Assertions.assertThrows(
             MessageConvertException::class.java,
             {
-                val message = ParsedMessage.newSoftMutable().apply {
+                val message = ParsedMessage.newMutable().apply {
                     type = "RootWithNestedComplex"
                     body["string"] = mapOf<String, Any>()
                 }
@@ -200,7 +200,7 @@ internal class TransportToIMessageConverterWithDictionaryTest : AbstractTranspor
         val exception = Assertions.assertThrows(
             MessageConvertException::class.java,
             {
-                val message = ParsedMessage.newSoftMutable().apply {
+                val message = ParsedMessage.newMutable().apply {
                     type = "RootWithNestedComplex"
                     body["complex"] = "fake"
                 }
@@ -219,7 +219,7 @@ internal class TransportToIMessageConverterWithDictionaryTest : AbstractTranspor
         val exception = Assertions.assertThrows(
             MessageConvertException::class.java,
             {
-                val message = ParsedMessage.newSoftMutable().apply {
+                val message = ParsedMessage.newMutable().apply {
                     type = "RootWithNestedComplex"
                     body["msgCollection"] = "fake"
                 }
@@ -238,7 +238,7 @@ internal class TransportToIMessageConverterWithDictionaryTest : AbstractTranspor
         val exception = Assertions.assertThrows(
             MessageConvertException::class.java,
             {
-                val message = ParsedMessage.newSoftMutable().apply {
+                val message = ParsedMessage.newMutable().apply {
                     type = "RootWithNestedComplex"
                     body["msgCollection"] = listOf("fake")
                 }

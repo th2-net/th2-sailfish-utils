@@ -28,7 +28,7 @@ internal class TransportToIMessageConverterWithoutDictionaryTest : AbstractTrans
 
     @Test
     fun convertsMessage() {
-        val message = ParsedMessage.newSoftMutable().apply {
+        val message = ParsedMessage.newMutable().apply {
             val simple = mapOf("Field" to "A")
             val innerMessage = mapOf(
                 "Simple" to "hello",
@@ -89,7 +89,7 @@ internal class TransportToIMessageConverterWithoutDictionaryTest : AbstractTrans
     fun conversionByDictionaryThrowException() {
         val illegalStateException = Assertions.assertThrows(
             IllegalArgumentException::class.java
-        ) { converter.fromTransport(BOOK, SESSION_GROUP, ParsedMessage.newSoftMutable().apply { type = "Test" }, true) }
+        ) { converter.fromTransport(BOOK, SESSION_GROUP, ParsedMessage.newMutable().apply { type = "Test" }, true) }
         Assertions.assertEquals("Cannot convert using dictionary without dictionary set", illegalStateException.message)
     }
 }

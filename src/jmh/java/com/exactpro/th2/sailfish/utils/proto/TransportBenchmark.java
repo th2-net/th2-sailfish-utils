@@ -26,7 +26,14 @@ import com.exactpro.th2.sailfish.utils.MessageWrapper;
 import com.exactpro.th2.sailfish.utils.factory.DefaultMessageFactoryProxy;
 import com.exactpro.th2.sailfish.utils.transport.TransportToIMessageConverter;
 import com.google.common.collect.ImmutableList;
-import org.openjdk.jmh.annotations.*;
+import org.openjdk.jmh.annotations.Benchmark;
+import org.openjdk.jmh.annotations.BenchmarkMode;
+import org.openjdk.jmh.annotations.Fork;
+import org.openjdk.jmh.annotations.Mode;
+import org.openjdk.jmh.annotations.OutputTimeUnit;
+import org.openjdk.jmh.annotations.Scope;
+import org.openjdk.jmh.annotations.State;
+import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.infra.Blackhole;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
@@ -121,19 +128,19 @@ public class TransportBenchmark {
 
     public static List<Map<String, Object>> getComplexList() {
         return List.of(
-            Map.of(
-                "field1", "field1",
-                "field2", "field2"
-            ),
-            Map.of(
-                "field1", "field3",
-                "field2", "field4"
-            )
+                Map.of(
+                        "field1", "field1",
+                        "field2", "field2"
+                ),
+                Map.of(
+                        "field1", "field3",
+                        "field2", "field4"
+                )
         );
     }
 
     public static ParsedMessage createMessageBuilder(String messageType) {
-        ParsedMessage parsedMessage = ParsedMessage.newSoftMutable();
+        ParsedMessage parsedMessage = ParsedMessage.newMutable();
         parsedMessage.setType(messageType);
         return parsedMessage;
     }

@@ -51,7 +51,7 @@ open class AbstractTransportToIMessageConverterTest {
         Assertions.assertEquals(0, ComparisonUtil.getResultCount(comparisonResult, StatusType.CONDITIONALLY_PASSED))
     }
 
-    protected fun createMessage(): ParsedMessage = ParsedMessage.newSoftMutable().apply {
+    protected fun createMessage(): ParsedMessage = ParsedMessage.newMutable().apply {
         type = "RootWithNestedComplex"
         with(body) {
             put("string", "StringValue")
