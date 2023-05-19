@@ -84,7 +84,7 @@ class TransportToIMessageConverter @JvmOverloads constructor(
         return dictionary.messages[type]?.let { messageStructure ->
             try {
                 runCatching {
-                    body.convertByDictionary(messageStructure)
+                    body.convertByDictionary(messageStructure, true)
                 }.onFailure {
                     throw MessageConvertException(messageStructure.name, it)
                 }.getOrThrow()
@@ -96,13 +96,13 @@ class TransportToIMessageConverter @JvmOverloads constructor(
 
     private fun Any.convertByDictionary(messageStructure: IFieldStructure): IMessage {
         require(this is Map<*, *>) { "Expected '${Map::class.java}' value but got '${this::class.java}' for field '${messageStructure.name}'" }
-        return convertByDictionary(messageStructure)
+        return convertByDictionary(messageStructure, false)
     }
 
-    private fun Map<*, *>.convertByDictionary(parentStructure: IFieldStructure): IMessage =
+    private fun Map<*, *>.convertByDictionary(parentStructure: IFieldStructure, isRoot: Boolean): IMessage =
         messageFactory.createMessage(
             dictionaryURI,
-            parentStructure.referenceName ?: parentStructure.name
+            if (isRoot) parentStructure.name else parentStructure.referenceName ?: parentStructure.name
         ).apply {
             forEach { (fieldName, fieldValue) ->
                 require(fieldName is String) {
@@ -152,6 +152,7 @@ class TransportToIMessageConverter @JvmOverloads constructor(
             is String -> this
             is Map<*, *> -> convertWithoutDictionary(fieldName)
             is List<*> -> convertList(fieldName)
+            // We can support simple type here and in the ValueFilter in the future
             else -> MultiConverter.convert(this, String::class.java)
         }
     }

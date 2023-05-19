@@ -41,7 +41,7 @@ open class AbstractTransportToIMessageConverterTest {
 
     protected fun assertPassed(expected: IMessage, actual: IMessage) {
         val comparisonResult = MessageComparator.compare(actual, expected, ComparatorSettings())
-        K_LOGGER.debug { "Message comparison result: $comparisonResult" }
+        K_LOGGER.debug { "Message comparison result: $comparisonResult, expected: ${expected.name}, actual: ${actual.name}" }
         Assertions.assertEquals(
             getSimpleFieldCountRecursive(expected),
             ComparisonUtil.getResultCount(comparisonResult, StatusType.PASSED)

@@ -15,32 +15,6 @@
  */
 package com.exactpro.th2.sailfish.utils;
 
-import static com.exactpro.sf.common.impl.messages.xml.configuration.JavaType.JAVA_LANG_BOOLEAN;
-import static com.google.protobuf.TextFormat.shortDebugString;
-import static java.util.Objects.requireNonNull;
-import static org.apache.commons.lang3.ObjectUtils.defaultIfNull;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.function.BiFunction;
-import java.util.stream.Collectors;
-
-import com.exactpro.th2.common.grpc.NullValue;
-import com.exactpro.th2.sailfish.utils.filter.EqualityFilter;
-import com.exactpro.th2.sailfish.utils.filter.ExactNullFilter;
-import com.exactpro.th2.sailfish.utils.filter.IOperationFilter;
-import com.exactpro.th2.sailfish.utils.filter.NullFilter;
-import com.exactpro.th2.sailfish.utils.filter.precision.DecimalFilterWithPrecision;
-import com.exactpro.th2.sailfish.utils.filter.precision.TimeFilterWithPrecision;
-import org.apache.commons.lang3.BooleanUtils;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.exactpro.sf.common.impl.messages.xml.configuration.JavaType;
 import com.exactpro.sf.common.messages.IMessage;
 import com.exactpro.sf.common.messages.IMetadata;
@@ -73,15 +47,40 @@ import com.exactpro.th2.common.grpc.Message;
 import com.exactpro.th2.common.grpc.MessageFilter;
 import com.exactpro.th2.common.grpc.MetadataFilter;
 import com.exactpro.th2.common.grpc.MetadataFilter.SimpleFilter;
+import com.exactpro.th2.common.grpc.NullValue;
 import com.exactpro.th2.common.grpc.Value;
 import com.exactpro.th2.common.grpc.Value.KindCase;
 import com.exactpro.th2.common.grpc.ValueFilter;
 import com.exactpro.th2.sailfish.utils.filter.CompareFilter;
+import com.exactpro.th2.sailfish.utils.filter.EqualityFilter;
+import com.exactpro.th2.sailfish.utils.filter.ExactNullFilter;
+import com.exactpro.th2.sailfish.utils.filter.IOperationFilter;
 import com.exactpro.th2.sailfish.utils.filter.ListContainFilter;
+import com.exactpro.th2.sailfish.utils.filter.NullFilter;
 import com.exactpro.th2.sailfish.utils.filter.RegExFilter;
 import com.exactpro.th2.sailfish.utils.filter.WildcardFilter;
+import com.exactpro.th2.sailfish.utils.filter.precision.DecimalFilterWithPrecision;
+import com.exactpro.th2.sailfish.utils.filter.precision.TimeFilterWithPrecision;
 import com.exactpro.th2.sailfish.utils.filter.util.FilterUtils;
 import com.google.protobuf.InvalidProtocolBufferException;
+import org.apache.commons.lang3.BooleanUtils;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.function.BiFunction;
+import java.util.stream.Collectors;
+
+import static com.exactpro.sf.common.impl.messages.xml.configuration.JavaType.JAVA_LANG_BOOLEAN;
+import static com.google.protobuf.TextFormat.shortDebugString;
+import static java.util.Objects.requireNonNull;
+import static org.apache.commons.lang3.ObjectUtils.defaultIfNull;
 
 public class ProtoToIMessageConverter {
     private static final Logger logger = LoggerFactory.getLogger(ProtoToIMessageConverter.class.getName());
@@ -121,16 +120,20 @@ public class ProtoToIMessageConverter {
         }
     }
 
-    public ProtoToIMessageConverter(@NotNull IMessageFactoryProxy messageFactory,
-                                    @Nullable IDictionaryStructure dictionaryStructure,
-                                    SailfishURI dictionaryURI) {
+    public ProtoToIMessageConverter(
+            @NotNull IMessageFactoryProxy messageFactory,
+            @Nullable IDictionaryStructure dictionaryStructure,
+            SailfishURI dictionaryURI
+    ) {
         this(messageFactory, dictionaryStructure, dictionaryURI, DEFAULT_PARAMETERS);
     }
 
-    public ProtoToIMessageConverter(@NotNull IMessageFactoryProxy messageFactory,
-                                    @Nullable IDictionaryStructure dictionaryStructure,
-                                    SailfishURI dictionaryURI,
-                                    Parameters parameters) {
+    public ProtoToIMessageConverter(
+            @NotNull IMessageFactoryProxy messageFactory,
+            @Nullable IDictionaryStructure dictionaryStructure,
+            SailfishURI dictionaryURI,
+            Parameters parameters
+    ) {
         this.messageFactory = requireNonNull(messageFactory, "'Message factory' parameter");
         this.dictionary = dictionaryStructure;
         this.dictionaryURI = dictionaryURI;
@@ -284,7 +287,7 @@ public class ProtoToIMessageConverter {
             throw new IllegalStateException("Message '" + messageType + "' hasn't been found in dictionary");
         }
         try {
-            return convertByDictionary(fieldsMap, messageStructure);
+            return convertByDictionary(fieldsMap, messageStructure, true);
         } catch (RuntimeException e) {
             throw new MessageConvertException(messageStructure.getName(), e);
         }
@@ -292,12 +295,12 @@ public class ProtoToIMessageConverter {
 
     private IMessage convertByDictionary(Value value, @NotNull IFieldStructure messageStructure) {
         checkKind(value, messageStructure.getName(), KindCase.MESSAGE_VALUE);
-        return convertByDictionary(value.getMessageValue().getFieldsMap(), messageStructure);
+        return convertByDictionary(value.getMessageValue().getFieldsMap(), messageStructure, false);
     }
 
-    private IMessage convertByDictionary(Map<String, Value> fieldsMap, @NotNull IFieldStructure messageStructure) {
+    private IMessage convertByDictionary(Map<String, Value> fieldsMap, @NotNull IFieldStructure messageStructure, boolean isRoot) {
         IMessage message = messageFactory.createMessage(dictionaryURI,
-                defaultIfNull(messageStructure.getReferenceName(), messageStructure.getName()));
+                isRoot ? messageStructure.getName() : defaultIfNull(messageStructure.getReferenceName(), messageStructure.getName()));
         for (Entry<String, Value> fieldEntry : fieldsMap.entrySet()) {
             String fieldName = fieldEntry.getKey();
             Value fieldValue = fieldEntry.getValue();
@@ -405,16 +408,16 @@ public class ProtoToIMessageConverter {
     }
 
     @SuppressWarnings("unchecked")
-    private static <T> T convertJavaType(Object value,  JavaType javaType) {
+    private static <T> T convertJavaType(Object value, JavaType javaType) {
         IConverter<?> converter = CONVERTERS.get(javaType);
         if (converter == null) {
             throw new ConversionException("No converter for type: " + javaType.value());
         }
-        return (T)converter.convert(value);
+        return (T) converter.convert(value);
     }
 
     private String convertEnumValue(IFieldStructure fieldStructure, String value) {
-        for(Entry<String, IAttributeStructure> enumEntry : fieldStructure.getValues().entrySet()) {
+        for (Entry<String, IAttributeStructure> enumEntry : fieldStructure.getValues().entrySet()) {
             String enumValue = enumEntry.getValue().getValue();
             if (enumEntry.getKey().equals(value) || enumValue.equals(value)) {
                 return enumValue;
@@ -444,7 +447,7 @@ public class ProtoToIMessageConverter {
         return convertList(listValue, fieldStructure, this::convertByDictionary);
     }
 
-    private <T> List<T> convertList(ListValue listValue, IFieldStructure fieldStructure, BiFunction<Value, IFieldStructure, T> mapper)  {
+    private <T> List<T> convertList(ListValue listValue, IFieldStructure fieldStructure, BiFunction<Value, IFieldStructure, T> mapper) {
         int size = listValue.getValuesCount();
         List<T> result = new ArrayList<>(size);
         for (int i = 0; i < size; i++) {

@@ -22,14 +22,17 @@
         </field>
     </fields>
     <messages>
-        <message id="SubMessageId" name="SubMessage">
+        <message id="Base" name="Base">
+            <attribute name="BaseAttribute" type="java.lang.String">Base</attribute>
+        </message>
+        <message id="SubMessageId" name="SubMessage" reference="Base">
             <field name="field1" type="java.lang.String"/>
             <field name="field2" type="java.lang.String"/>
         </message>
-        <message id="SubComplexListId" name="SubComplexList">
+        <message id="SubComplexListId" name="SubComplexList" reference="Base">
             <field name="list" reference="SubMessageId" isCollection="true"/>
         </message>
-        <message id="RootWithNestedComplexId" name="RootWithNestedComplex">
+        <message id="RootWithNestedComplexId" name="RootWithNestedComplex" reference="Base">
             <field name="string" type="java.lang.String"/>
             <field name="byte" type="java.lang.Byte"/>
             <field name="short" type="java.lang.Short"/>
