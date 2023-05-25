@@ -39,11 +39,13 @@ import com.exactpro.sf.comparison.conversion.impl.StringConverter
 import com.exactpro.sf.configuration.suri.SailfishURI
 import com.exactpro.sf.externalapi.IMessageFactoryProxy
 import com.exactpro.th2.common.schema.message.impl.rabbitmq.transport.ParsedMessage
-import com.exactpro.th2.common.schema.message.impl.rabbitmq.transport.toProto
+import com.exactpro.th2.common.utils.message.transport.toProto
 import com.exactpro.th2.sailfish.utils.MessageConvertException
 import com.exactpro.th2.sailfish.utils.MessageWrapper
 import com.exactpro.th2.sailfish.utils.ToSailfishParameters
 import com.exactpro.th2.sailfish.utils.UnknownEnumException
+import com.exactpro.th2.sailfish.utils.filter.util.FilterUtils.NULL_VALUE
+import com.exactpro.th2.sailfish.utils.filter.util.FilterUtils.NullValue
 import mu.KotlinLogging
 import org.apache.commons.lang3.BooleanUtils
 import java.util.*
@@ -108,21 +110,10 @@ class TransportToIMessageConverter @JvmOverloads constructor(
                 require(fieldName is String) {
                     "Field name should be string type instead of ${if (fieldName != null) fieldName::class.java else "null"} type, parent field name ${parentStructure.name}"
                 }
-                if (fieldValue == null) {
-                    addField(fieldName, null)
-                    return@forEach
-                }
                 val fieldStructure: IFieldStructure = parentStructure.fields[fieldName]
                     ?: error("Field '$fieldName' hasn't been found in message structure: ${parentStructure.name}")
                 try {
                     runCatching {
-                        val convertedValue = if (fieldStructure.isComplex) {
-                            processComplex(fieldValue, fieldStructure)
-                        } else {
-                            fieldValue.convertSimple(fieldStructure)
-                        }
-                        addField(fieldName, convertedValue)
-
                         traverseField(this, fieldName, fieldValue, fieldStructure)
                     }.onFailure {
                         throw MessageConvertException(fieldStructure.name, it)
@@ -140,15 +131,16 @@ class TransportToIMessageConverter @JvmOverloads constructor(
                 require(fieldName is String) {
                     "Field name should be string type instead of ${if (fieldName != null) fieldName::class.java else "null"} type, message type = $messageType"
                 }
-                require(fieldValue != null) { "$messageType message contains with null value in $fieldName filed" }
                 val traverseField = fieldValue.traverseField(fieldName)
                 addField(fieldName, traverseField)
             }
             K_LOGGER.debug { "Converted message without dictionary: $this" }
         }
 
-    private fun Any.traverseField(fieldName: String): Any {
+    private fun Any?.traverseField(fieldName: String): Any? {
         return when (this) {
+            null -> nullValue()
+            is Number -> MultiConverter.convert(this, String::class.java)
             is String -> this
             is Map<*, *> -> convertWithoutDictionary(fieldName)
             is List<*> -> convertList(fieldName)
@@ -159,30 +151,28 @@ class TransportToIMessageConverter @JvmOverloads constructor(
 
     private fun List<*>.convertList(fieldName: String): MutableList<*> {
         return this@convertList.asSequence()
-            .mapIndexed { index, value ->
-                require(value != null) { "$fieldName filed contains list with null value at $index index" }
-                value.traverseField(fieldName)
-            }
+            .map { value -> value.traverseField(fieldName) }
             .toMutableList()
     }
 
     private fun traverseField(
         message: IMessage,
         fieldName: String,
-        value: Any,
+        value: Any?,
         fieldStructure: IFieldStructure
     ) {
-        val convertedValue =
-            (if (fieldStructure.isComplex) processComplex(value, fieldStructure) else value.convertSimple(
-                fieldStructure
-            ))
+        val convertedValue: Any? = when {
+            value == null -> nullValue()
+            fieldStructure.isComplex -> processComplex(value, fieldStructure)
+            else -> value.convertSimple(fieldStructure)
+        }
         message.addField(fieldName, convertedValue)
     }
 
-    private fun Any?.convertSimple(parentStructure: IFieldStructure): Any? {
+    private fun Any.convertSimple(parentStructure: IFieldStructure): Any? {
         if (parentStructure.isCollection) {
             require(this is List<*>) {
-                "Expected '${List::class.java}' value but got '${if (this != null) this::class.java else null}' for field '${parentStructure.name}'"
+                "Expected '${List::class.java}' value but got '${this::class.java}' for field '${parentStructure.name}'"
             }
             return this.convertList(parentStructure) { value: Any?, fieldStructure: IFieldStructure ->
                 value.convertToTarget(fieldStructure)
@@ -191,12 +181,23 @@ class TransportToIMessageConverter @JvmOverloads constructor(
         return this.convertToTarget(parentStructure)
     }
 
+    private fun nullValue(): NullValue? =
+        if (parameters.useMarkerForNullsInMessage) NULL_VALUE else null // skip null value conversion
+
     private fun Any?.convertToTarget(fieldStructure: IFieldStructure): Any? {
         return when (this) {
-            null -> null
+            null -> nullValue()
+            is Number -> convertJavaType<Any>(
+                this,
+                fieldStructure.javaType
+            )
+
             is String -> {
-                val targetValue = if (fieldStructure.isEnum) convertEnumValue(fieldStructure, this) else this
-                // TODO may be place its logic into the MultiConverter
+                val targetValue = if (fieldStructure.isEnum) {
+                    convertEnumValue(fieldStructure, MultiConverter.convert(this, String::class.java))
+                } else {
+                    this
+                }
                 if (fieldStructure.javaType == JavaType.JAVA_LANG_BOOLEAN) {
                     BooleanUtils.toBooleanObject(targetValue)
                 } else convertJavaType<Any>(

@@ -29,11 +29,14 @@ internal class TransportToIMessageConverterWithDictionaryIgnoreEnumsTest : Abstr
         dictionaryURI,
         ToSailfishParameters(allowUnknownEnumValues = true)
     )
+
     @Test
     fun unknownEnumExceptionTest() {
         val transportMessage = createMessage().apply {
-            body["enumInt"] = "5"
-        }
+            bodyBuilder().apply {
+                put("enumInt", "5")
+            }
+        }.build()
         val message = assertDoesNotThrow<MessageWrapper>(
             { converter.fromTransport(BOOK, SESSION_GROUP, transportMessage, true) },
             "Unknown enum value should not fail"

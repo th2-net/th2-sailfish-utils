@@ -16,7 +16,8 @@
 package com.exactpro.th2.sailfish.utils
 
 class ToSailfishParameters(
-    val allowUnknownEnumValues: Boolean = false
+    val allowUnknownEnumValues: Boolean = false,
+    val useMarkerForNullsInMessage: Boolean = false
 ) {
     companion object {
         val DEFAULT = ToSailfishParameters()

@@ -12,7 +12,9 @@ Implemented converters for th2 transport protocol
 Sailfish version is updated from `3.3.54` to `3.3.93`
 
 + Support message structure inheritance
-+ Versions for dependencies with vulnerabilities was updated:
++ Added dependency
+    + common-utils `2.1.0`
++ Versions for dependencies were updated:
     + BOM `4.1.0` -> `4.2.0`
     + common `3.44.0` -> `5.2.0`
 
@@ -20,14 +22,14 @@ Sailfish version is updated from `3.3.54` to `3.3.93`
 
 Sailfish version is updated from `3.3.11` to `3.3.54`
 
-+ Versions for dependencies with vulnerabilities was updated:
++ Versions for dependencies with vulnerabilities were updated:
     + BOM `4.0.1` -> `4.1.0`
     + common `3.41.0` -> `3.44.0`
 
 ### 3.13.0
 
 + Sailfish version is updated from `3.2.1741` to `3.3.11`
-+ Versions for dependencies with vulnerabilities was updated:
++ Versions for dependencies with vulnerabilities were updated:
     + BOM `3.0.0` -> `4.0.1`
     + common `3.31.3` -> `3.41.0`
     + log4j `1.2` removed from dependencies

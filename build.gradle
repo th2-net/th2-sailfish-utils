@@ -52,8 +52,10 @@ targetCompatibility = 11
 
 dependencies {
     api platform('com.exactpro.th2:bom:4.2.0')
-    api 'com.exactpro.th2:common:5.2.0-json-raw-body-5014253802-34f0e61-SNAPSHOT'
+    api 'com.exactpro.th2:common:5.2.0-json-raw-body-5080623849-ed74414-SNAPSHOT'
     api "com.exactpro.sf:sailfish-core:${sailfishVersion}"
+
+    implementation 'com.exactpro.th2:common-utils:2.1.0-transport-protocol-5081007240-883a04e-SNAPSHOT'
 
     implementation "org.slf4j:slf4j-api"
     implementation "com.google.protobuf:protobuf-java-util"

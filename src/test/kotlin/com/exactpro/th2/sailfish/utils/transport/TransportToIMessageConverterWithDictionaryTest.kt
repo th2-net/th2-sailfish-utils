@@ -35,8 +35,10 @@ internal class TransportToIMessageConverterWithDictionaryTest : AbstractTranspor
     fun convertByDictionaryPositive() {
         val properties = mapOf("key" to "value")
         val transportMessage = createMessage().apply {
-            metadata.putAll(properties)
-        }
+            metadataBuilder().apply {
+                putAll(properties)
+            }
+        }.build()
         val actualIMessage = converter.fromTransport(BOOK, SESSION_GROUP, transportMessage, true)
         val expectedIMessage = createExpectedIMessage()
         Assertions.assertAll(
@@ -57,8 +59,10 @@ internal class TransportToIMessageConverterWithDictionaryTest : AbstractTranspor
     @Test
     fun unknownEnumExceptionTest() {
         val transportMessage = createMessage().apply {
-            body["enumInt"] = "UNKNOWN_ALIAS"
-        }
+            bodyBuilder().apply {
+                put("enumInt", "UNKNOWN_ALIAS")
+            }
+        }.build()
         val exception = Assertions.assertThrows(
             MessageConvertException::class.java,
             { converter.fromTransport(BOOK, SESSION_GROUP, transportMessage, true) },
@@ -78,7 +82,7 @@ internal class TransportToIMessageConverterWithDictionaryTest : AbstractTranspor
                 converter.fromTransport(
                     BOOK,
                     SESSION_GROUP,
-                    ParsedMessage.newMutable().apply { type = "SomeUnknownMessage" },
+                    ParsedMessage(type = "SomeUnknownMessage"),
                     true
                 )
             },
@@ -91,7 +95,7 @@ internal class TransportToIMessageConverterWithDictionaryTest : AbstractTranspor
     fun convertMessageWithoutMessageTypeThrowException() {
         val argumentException = Assertions.assertThrows(
             IllegalArgumentException::class.java,
-            { converter.fromTransport(BOOK, SESSION_GROUP, ParsedMessage(), true) },
+            { converter.fromTransport(BOOK, SESSION_GROUP, ParsedMessage(type = ""), true) },
             "Conversion for message without message type should fails"
         )
         Assertions.assertEquals("Cannot convert message with blank message type", argumentException.message)
@@ -102,10 +106,12 @@ internal class TransportToIMessageConverterWithDictionaryTest : AbstractTranspor
         val exception = Assertions.assertThrows(
             MessageConvertException::class.java,
             {
-                val message = ParsedMessage.newMutable().apply {
-                    type = "RootWithNestedComplex"
-                    body["Fake"] = "fake"
-                }
+                val message = ParsedMessage.builder().apply {
+                    setType("RootWithNestedComplex")
+                    bodyBuilder().apply {
+                        put("Fake", "fake")
+                    }
+                }.build()
                 converter.fromTransport(BOOK, SESSION_GROUP, message, true)
             },
             "Conversion for message with unknown field in root should fails"
@@ -121,10 +127,12 @@ internal class TransportToIMessageConverterWithDictionaryTest : AbstractTranspor
         val exception = Assertions.assertThrows(
             MessageConvertException::class.java,
             {
-                val message = ParsedMessage.newMutable().apply {
-                    type = "RootWithNestedComplex"
-                    body["complex"] = mapOf("Fake" to "fake")
-                }
+                val message = ParsedMessage.builder().apply {
+                    setType("RootWithNestedComplex")
+                    bodyBuilder().apply {
+                        put("complex", mapOf("Fake" to "fake"))
+                    }
+                }.build()
                 converter.fromTransport(BOOK, SESSION_GROUP, message, true)
             },
             "Conversion for message with unknown field in sub-message should fails"
@@ -140,13 +148,17 @@ internal class TransportToIMessageConverterWithDictionaryTest : AbstractTranspor
         val exception = Assertions.assertThrows(
             MessageConvertException::class.java,
             {
-                val message = ParsedMessage.newMutable().apply {
-                    type = "RootWithNestedComplex"
-                    body["msgCollection"] = listOf(
-                        mapOf("field1" to "field1"),
-                        mapOf("Fake" to "fake"),
-                    )
-                }
+                val message = ParsedMessage.builder().apply {
+                    setType("RootWithNestedComplex")
+                    bodyBuilder().apply {
+                        put(
+                            "msgCollection", listOf(
+                                mapOf("field1" to "field1"),
+                                mapOf("Fake" to "fake"),
+                            )
+                        )
+                    }
+                }.build()
                 converter.fromTransport(BOOK, SESSION_GROUP, message, true)
             },
             "Conversion for message with unknown field in message collection should fails"
@@ -162,10 +174,12 @@ internal class TransportToIMessageConverterWithDictionaryTest : AbstractTranspor
         val exception = Assertions.assertThrows(
             MessageConvertException::class.java,
             {
-                val message = ParsedMessage.newMutable().apply {
-                    type = "RootWithNestedComplex"
-                    body["simpleCollection"] = listOf("1", "abc")
-                }
+                val message = ParsedMessage.builder().apply {
+                    setType("RootWithNestedComplex")
+                    bodyBuilder().apply {
+                        put("simpleCollection", listOf("1", "abc"))
+                    }
+                }.build()
                 converter.fromTransport(BOOK, SESSION_GROUP, message, true)
             },
             "Conversion for message with unknown field in simple collection should fails"
@@ -181,10 +195,12 @@ internal class TransportToIMessageConverterWithDictionaryTest : AbstractTranspor
         val exception = Assertions.assertThrows(
             MessageConvertException::class.java,
             {
-                val message = ParsedMessage.newMutable().apply {
-                    type = "RootWithNestedComplex"
-                    body["string"] = mapOf<String, Any>()
-                }
+                val message = ParsedMessage.builder().apply {
+                    setType("RootWithNestedComplex")
+                    bodyBuilder().apply {
+                        put("string", mapOf<String, Any>())
+                    }
+                }.build()
                 converter.fromTransport(BOOK, SESSION_GROUP, message, true)
             },
             "Conversion for message with incorrect type of field with simple value should fails"
@@ -200,10 +216,12 @@ internal class TransportToIMessageConverterWithDictionaryTest : AbstractTranspor
         val exception = Assertions.assertThrows(
             MessageConvertException::class.java,
             {
-                val message = ParsedMessage.newMutable().apply {
-                    type = "RootWithNestedComplex"
-                    body["complex"] = "fake"
-                }
+                val message = ParsedMessage.builder().apply {
+                    setType("RootWithNestedComplex")
+                    bodyBuilder().apply {
+                        put("complex", "fake")
+                    }
+                }.build()
                 converter.fromTransport(BOOK, SESSION_GROUP, message, true)
             },
             "Conversion for message with incorrect type of field with complex value should fails"
@@ -219,10 +237,12 @@ internal class TransportToIMessageConverterWithDictionaryTest : AbstractTranspor
         val exception = Assertions.assertThrows(
             MessageConvertException::class.java,
             {
-                val message = ParsedMessage.newMutable().apply {
-                    type = "RootWithNestedComplex"
-                    body["msgCollection"] = "fake"
-                }
+                val message = ParsedMessage.builder().apply {
+                    setType("RootWithNestedComplex")
+                    bodyBuilder().apply {
+                        put("msgCollection", "fake")
+                    }
+                }.build()
                 converter.fromTransport(BOOK, SESSION_GROUP, message, true)
             },
             "Conversion for message with incorrect type of field with list complex value should fails"
@@ -238,10 +258,12 @@ internal class TransportToIMessageConverterWithDictionaryTest : AbstractTranspor
         val exception = Assertions.assertThrows(
             MessageConvertException::class.java,
             {
-                val message = ParsedMessage.newMutable().apply {
-                    type = "RootWithNestedComplex"
-                    body["msgCollection"] = listOf("fake")
-                }
+                val message = ParsedMessage.builder().apply {
+                    setType("RootWithNestedComplex")
+                    bodyBuilder().apply {
+                        put("msgCollection", listOf("fake"))
+                    }
+                }.build()
                 converter.fromTransport(BOOK, SESSION_GROUP, message, true)
             },
             "Conversion for message with incorrect type of field with list complex value should fails"

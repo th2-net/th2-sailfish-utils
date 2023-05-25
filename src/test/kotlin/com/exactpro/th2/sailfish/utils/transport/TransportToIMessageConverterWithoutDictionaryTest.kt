@@ -15,20 +15,39 @@
  */
 package com.exactpro.th2.sailfish.utils.transport
 
+import com.exactpro.sf.aml.scriptutil.StaticUtil.IFilter
+import com.exactpro.sf.common.messages.IMessage
+import com.exactpro.sf.comparison.ComparatorSettings
+import com.exactpro.sf.comparison.MessageComparator
+import com.exactpro.sf.scriptrunner.StatusType
+import com.exactpro.th2.common.grpc.FilterOperation
+import com.exactpro.th2.common.grpc.MetadataFilter
+import com.exactpro.th2.common.grpc.SimpleList
 import com.exactpro.th2.common.schema.message.impl.rabbitmq.transport.ParsedMessage
+import com.exactpro.th2.sailfish.utils.MessageWrapper
+import com.exactpro.th2.sailfish.utils.ProtoToIMessageConverter
 import com.exactpro.th2.sailfish.utils.factory.DefaultMessageFactoryProxy
+import com.exactpro.th2.sailfish.utils.filter.IOperationFilter
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 internal class TransportToIMessageConverterWithoutDictionaryTest : AbstractTransportToIMessageConverterTest() {
     private val messageFactory = DefaultMessageFactoryProxy()
-    private val converter = TransportToIMessageConverter(
+    private val transportConverter = TransportToIMessageConverter(
+        DefaultMessageFactoryProxy(), null, dictionaryURI
+    )
+    private val protoConverter = ProtoToIMessageConverter(
         DefaultMessageFactoryProxy(), null, dictionaryURI
     )
 
     @Test
     fun convertsMessage() {
-        val message = ParsedMessage.newMutable().apply {
+        val message = ParsedMessage.builder().apply {
             val simple = mapOf("Field" to "A")
             val innerMessage = mapOf(
                 "Simple" to "hello",
@@ -43,8 +62,8 @@ internal class TransportToIMessageConverterWithoutDictionaryTest : AbstractTrans
                     ).also { it.putAll(simple) },
                 ),
             )
-            type = "SomeMessage"
-            with(body) {
+            setType("SomeMessage")
+            bodyBuilder().apply {
                 put("Simple", "hello")
                 put("SimpleList", listOf("1", "2"))
                 put("ComplexField", innerMessage)
@@ -59,7 +78,7 @@ internal class TransportToIMessageConverterWithoutDictionaryTest : AbstractTrans
                     )
                 )
             }
-        }
+        }.build()
 
         val simple = messageFactory.createMessage(dictionaryURI, "Simple")
         simple.addField("Field", "A")
@@ -81,7 +100,7 @@ internal class TransportToIMessageConverterWithoutDictionaryTest : AbstractTrans
         expected.addField("SimpleList", listOf("1", "2"))
         expected.addField("ComplexField", actualInnerMessage)
         expected.addField("ComplexList", listOf(actualInner0, actualInner1))
-        val result = converter.fromTransport(BOOK, SESSION_GROUP, message, false)
+        val result = transportConverter.fromTransport(BOOK, SESSION_GROUP, message, false)
         assertPassed(expected, result)
     }
 
@@ -89,7 +108,85 @@ internal class TransportToIMessageConverterWithoutDictionaryTest : AbstractTrans
     fun conversionByDictionaryThrowException() {
         val illegalStateException = Assertions.assertThrows(
             IllegalArgumentException::class.java
-        ) { converter.fromTransport(BOOK, SESSION_GROUP, ParsedMessage.newMutable().apply { type = "Test" }, true) }
+        ) {
+            transportConverter.fromTransport(
+                BOOK,
+                SESSION_GROUP,
+                ParsedMessage(type = "Test"),
+                true
+            )
+        }
         Assertions.assertEquals("Cannot convert using dictionary without dictionary set", illegalStateException.message)
+    }
+
+    @Test
+    fun convertsMetadataFilter() {
+        val metadataFilter = MetadataFilter.newBuilder()
+            .putPropertyFilters(
+                "prop1", MetadataFilter.SimpleFilter.newBuilder()
+                    .setOperation(FilterOperation.EQUAL)
+                    .setValue("test")
+                    .build()
+            )
+            .putPropertyFilters(
+                "prop2", MetadataFilter.SimpleFilter.newBuilder()
+                    .setOperation(FilterOperation.EQUAL)
+                    .setValue("test")
+                    .build()
+            )
+            .build()
+        val message: IMessage = protoConverter.fromMetadataFilter(metadataFilter, "Metadata")
+        Assertions.assertEquals("Metadata", message.name)
+        Assertions.assertEquals(2, message.fieldCount)
+        Assertions.assertTrue(
+            setOf("prop1", "prop2").containsAll(message.fieldNames)
+        ) { "Unknown fields: $message" }
+        val prop1 = message.getField<Any>("prop1")
+        Assertions.assertTrue(prop1 is IFilter) { "Unexpected type: " + prop1.javaClass }
+        val prop2 = message.getField<Any>("prop2")
+        Assertions.assertTrue(prop2 is IFilter) { "Unexpected type: " + prop2.javaClass }
+    }
+
+    private fun inOperationFilter(): List<Arguments> {
+        return listOf(
+            Arguments.of("A", StatusType.PASSED, FilterOperation.IN),
+            Arguments.of("D", StatusType.FAILED, FilterOperation.IN),
+            Arguments.of("D", StatusType.PASSED, FilterOperation.NOT_IN),
+            Arguments.of("A", StatusType.FAILED, FilterOperation.NOT_IN)
+        )
+    }
+
+    @ParameterizedTest
+    @MethodSource("inOperationFilter")
+    fun testListContainsValueFilter(value: String?, status: StatusType?, operation: FilterOperation?) {
+        val metadataFilter = MetadataFilter.newBuilder()
+            .putPropertyFilters(
+                "prop1", MetadataFilter.SimpleFilter.newBuilder()
+                    .setOperation(operation)
+                    .setSimpleList(
+                        SimpleList.newBuilder()
+                            .addAllSimpleValues(listOf("A", "B", "C"))
+                    )
+                    .build()
+            )
+            .build()
+        val actual = ParsedMessage.builder().apply {
+            setType("Metadata")
+            bodyBuilder().apply {
+                put("prop1", value)
+            }
+        }.build()
+        val actualIMessage: MessageWrapper =
+            transportConverter.fromTransport("test-book", "test-session-group", actual, false)
+        val message: IMessage = protoConverter.fromMetadataFilter(metadataFilter, "Metadata")
+        val result = MessageComparator.compare(actualIMessage, message, ComparatorSettings())
+        Assertions.assertEquals(status, result.getResult("prop1").status)
+        Assertions.assertEquals("Metadata", message.name)
+        Assertions.assertEquals(1, message.fieldCount)
+        Assertions.assertTrue(
+            setOf("prop1").containsAll(message.fieldNames)
+        ) { "Unknown fields: $message" }
+        val prop1 = message.getField<Any>("prop1")
+        Assertions.assertTrue(prop1 is IOperationFilter) { "Unexpected type: " + prop1.javaClass }
     }
 }

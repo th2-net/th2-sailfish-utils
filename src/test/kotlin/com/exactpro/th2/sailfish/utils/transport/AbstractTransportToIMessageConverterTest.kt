@@ -51,33 +51,34 @@ open class AbstractTransportToIMessageConverterTest {
         Assertions.assertEquals(0, ComparisonUtil.getResultCount(comparisonResult, StatusType.CONDITIONALLY_PASSED))
     }
 
-    protected fun createMessage(): ParsedMessage = ParsedMessage.newMutable().apply {
-        type = "RootWithNestedComplex"
-        with(body) {
-            put("string", "StringValue")
-            put("byte", "0")
-            put("short", "1")
-            put("int", "2")
-            put("long", "3")
-            put("float", "1.1")
-            put("double", "2.2")
-            put("decimal", "3.3")
-            put("char", "A")
-            put("bool", "true")
-            put("boolY", "Y")
-            put("boolN", "n")
-            put("enumInt", "5")
-            put("enumInt", "MINUS_ONE")
-            put("complex", mapOf("field1" to "field1", "field2" to "field2"))
-            put(
-                "complexList", mapOf(
+    protected fun createMessage(): ParsedMessage.FromMapBuilder = ParsedMessage.builder().apply {
+        setType("RootWithNestedComplex")
+        setBody(
+            hashMapOf(
+                "string" to "StringValue",
+                "byte" to "0",
+                "short" to "1",
+                "int" to "2",
+                "long" to "3",
+                "float" to "1.1",
+                "double" to "2.2",
+                "decimal" to "3.3",
+                "char" to "A",
+                "bool" to "true",
+                "boolY" to "Y",
+                "boolN" to "n",
+                "enumInt" to "5",
+                "enumInt" to "MINUS_ONE",
+                "complex" to hashMapOf("field1" to "field1", "field2" to "field2"),
+                "nullField" to null,
+                "complexList" to hashMapOf(
                     "list" to listOf(
-                        mapOf("field1" to "field1", "field2" to "field2"),
-                        mapOf("field1" to "field3", "field2" to "field4")
+                        hashMapOf("field1" to "field1", "field2" to "field2"),
+                        hashMapOf("field1" to "field3", "field2" to "field4")
                     )
                 )
             )
-        }
+        )
     }
 
     protected fun createExpectedIMessage(): MessageWrapper {
