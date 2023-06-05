@@ -190,3 +190,15 @@ test {
 dependencyLocking {    
     lockAllConfigurations()
 }
+
+dependencyCheck {
+    formats=['SARIF', 'JSON', 'HTML']
+    failBuildOnCVSS=5
+    suppressionFile="suppressions.xml"
+
+    analyzers {
+        assemblyEnabled = false
+        nugetconfEnabled = false
+        nodeEnabled = false
+    }
+}

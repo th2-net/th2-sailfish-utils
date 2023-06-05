@@ -8,6 +8,7 @@ This library contains classes to convert messages from th2 to Sailfish format an
 + Sailfish version is updated from `3.3.54` to `3.3.106`
   + IMessageToProtoConverter: Support for explicit null values in IMessage. 
 + Owasp plugin updated to `8.2.1`
+  + Dependency check task created. 
 
 ### 3.14.0
 
