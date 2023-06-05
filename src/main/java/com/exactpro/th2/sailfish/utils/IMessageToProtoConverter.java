@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import static java.time.temporal.ChronoField.NANO_OF_SECOND;
 import static java.time.temporal.ChronoField.SECOND_OF_MINUTE;
 import static java.util.Objects.requireNonNull;
 
+import com.exactpro.th2.common.grpc.NullValue;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -63,7 +64,9 @@ public class IMessageToProtoConverter {
 
     private Value convertToValue(Object fieldValue) {
         Value.Builder valueBuilder = Value.newBuilder();
-        if (fieldValue instanceof IMessage) {
+        if(fieldValue == null) {
+            valueBuilder.setNullValue(NullValue.NULL_VALUE);
+        } else if (fieldValue instanceof IMessage) {
             Message nestedMessage = convertComplex((IMessage) fieldValue);
             valueBuilder.setMessageValue(nestedMessage);
         } else if (fieldValue instanceof List<?>) {
@@ -80,15 +83,25 @@ public class IMessageToProtoConverter {
         ListValue.Builder listBuilder = ListValue.newBuilder();
         var fieldList = (List<?>)fieldValue;
         if (!fieldList.isEmpty() && fieldList.get(0) instanceof IMessage) {
-            fieldList.forEach(message -> listBuilder.addValues(
-                            Value.newBuilder()
-                            .setMessageValue(convertComplex((IMessage)message))
-                            .build()
-                    ));
+            fieldList.forEach(message -> {
+                Value.Builder builder = Value.newBuilder();
+                if(message == null) {
+                    builder.setNullValue(NullValue.NULL_VALUE);
+                } else {
+                    builder.setMessageValue(convertComplex((IMessage)message));
+                }
+                listBuilder.addValues(builder.build());
+            });
         } else {
-            fieldList.forEach(value -> listBuilder.addValues(
-                            addSimpleValue(value, Value.newBuilder())
-                    ));
+            fieldList.forEach(value -> {
+                Value.Builder builder = Value.newBuilder();
+                if(value == null) {
+                    builder.setNullValue(NullValue.NULL_VALUE);
+                } else {
+                    addSimpleValue(value, builder);
+                }
+                listBuilder.addValues(builder.build());
+            });
         }
         return listBuilder.build();
     }
