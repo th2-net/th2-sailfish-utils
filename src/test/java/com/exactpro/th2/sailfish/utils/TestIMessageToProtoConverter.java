@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2020-2020 Exactpro (Exactpro Systems Limited)
+ * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -61,6 +62,36 @@ class TestIMessageToProtoConverter extends AbstractConverterTest {
         ListValue listValue = emptyColValue.getListValue();
         assertNotNull(listValue, () -> "Null list value: " + emptyColValue);
         assertTrue(listValue.getValuesList().isEmpty(), () -> "List is not empty: " + listValue);
+    }
+
+    @Test
+    void convertsNullFields() {
+        List<Integer> collectionWithNull = new ArrayList<>();
+        collectionWithNull.add(1);
+        collectionWithNull.add(null);
+        collectionWithNull.add(2);
+        IMessage message = createMessage("Test");
+        message.addField("emptyField", null);
+        message.addField("collectionWithNull", collectionWithNull);
+        IMessageToProtoConverter converter = new IMessageToProtoConverter();
+        Message convertedMessage = converter.toProtoMessage(message).build();
+        assertEquals("Test", convertedMessage.getMetadata().getMessageType(), () -> "Converted message: " + convertedMessage);
+        Map<String, Value> fieldsMap = convertedMessage.getFieldsMap();
+        assertEquals(2, fieldsMap.size(), "Unexpected fields count: " + fieldsMap);
+
+        Value emptyColValue = fieldsMap.get("emptyField");
+        assertNotNull(emptyColValue, () -> "Message doesn't have 'emptyField' field: " + fieldsMap);
+        assertEquals(emptyColValue.getKindCase(), KindCase.NULL_VALUE);
+
+        Value collectionWithNullValue = fieldsMap.get("collectionWithNull");
+        assertNotNull(collectionWithNullValue, () -> "Message doesn't have 'collectionWithNull' field: " + fieldsMap);
+        assertTrue(collectionWithNullValue.hasListValue());
+
+        List<Value> values = collectionWithNullValue.getListValue().getValuesList();
+        assertEquals(values.size(), 3, () -> "Unexpected list size in 'collectionWithNull' field");
+        assertEquals("1",values.get(0).getSimpleValue());
+        assertEquals(values.get(1).getKindCase(), KindCase.NULL_VALUE);
+        assertEquals("2", values.get(2).getSimpleValue());
     }
 
     @Test

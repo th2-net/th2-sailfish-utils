@@ -1,8 +1,14 @@
-# th2 Sailfish Utils (3.14.0)
+# th2 Sailfish Utils (3.15.0)
 
 This library contains classes to convert messages from th2 to Sailfish format and vice versa. They are used in several th2 projects to reuse Sailfish features: message comparison, codec/connect implementations, etc.
 
 ## Release Notes
+
+### 3.15.0
++ Sailfish version is updated from `3.3.54` to `3.3.106`
+  + IMessageToProtoConverter: Support for explicit null values in IMessage. 
++ Owasp plugin updated to `8.2.1`
+  + Dependency check task created. 
 
 ### 3.14.0
 
