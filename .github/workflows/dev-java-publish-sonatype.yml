@@ -13,10 +13,11 @@ on:
 
 jobs:
   build-job:
-    uses: th2-net/.github/.github/workflows/compound-java-dev.yml@main
+    uses: th2-net/.github/.github/workflows/compound-java-dev.yml@license-scan
     with:
       build-target: 'Sonatype'
       runsOn: ubuntu-latest
+      scanner-enabled: false
     secrets:
       sonatypeUsername: ${{ secrets.SONATYPE_NEXUS_USERNAME }}
       sonatypePassword: ${{ secrets.SONATYPE_NEXUS_PASSWORD }}
