@@ -14,7 +14,6 @@ jobs:
     with:
       build-target: 'Sonatype'
       runsOn: ubuntu-latest
-      scanner-enabled: false
     secrets:
       sonatypeUsername: ${{ secrets.SONATYPE_NEXUS_USERNAME }}
       sonatypePassword: ${{ secrets.SONATYPE_NEXUS_PASSWORD }}
