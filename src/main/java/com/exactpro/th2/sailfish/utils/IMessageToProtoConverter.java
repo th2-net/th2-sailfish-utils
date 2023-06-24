@@ -15,7 +15,22 @@
  */
 package com.exactpro.th2.sailfish.utils;
 
+import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
+import static java.time.temporal.ChronoField.HOUR_OF_DAY;
+import static java.time.temporal.ChronoField.MINUTE_OF_HOUR;
+import static java.time.temporal.ChronoField.NANO_OF_SECOND;
+import static java.time.temporal.ChronoField.SECOND_OF_MINUTE;
+import static java.util.Objects.requireNonNull;
+
+import com.exactpro.th2.common.grpc.NullValue;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
 import java.util.List;
+import java.util.Locale;
+import java.util.Locale.Category;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -23,8 +38,19 @@ import com.exactpro.sf.common.messages.IMessage;
 import com.exactpro.th2.common.grpc.ListValue;
 import com.exactpro.th2.common.grpc.Message;
 import com.exactpro.th2.common.grpc.Value;
+import com.exactpro.th2.common.grpc.Value.Builder;
 
 public class IMessageToProtoConverter {
+    private final Parameters parameters;
+
+    public IMessageToProtoConverter() {
+        this(Parameters.DEFAULT);
+    }
+
+    public IMessageToProtoConverter(Parameters parameters) {
+        this.parameters = requireNonNull(parameters, "'Parameters' parameter");
+    }
+
     public Message.Builder toProtoMessage(IMessage message) {
         Message.Builder builder = Message.newBuilder();
         builder.getMetadataBuilder().setMessageType(message.getName());
@@ -38,14 +64,16 @@ public class IMessageToProtoConverter {
 
     private Value convertToValue(Object fieldValue) {
         Value.Builder valueBuilder = Value.newBuilder();
-        if (fieldValue instanceof IMessage) {
+        if(fieldValue == null) {
+            valueBuilder.setNullValue(NullValue.NULL_VALUE);
+        } else if (fieldValue instanceof IMessage) {
             Message nestedMessage = convertComplex((IMessage) fieldValue);
             valueBuilder.setMessageValue(nestedMessage);
         } else if (fieldValue instanceof List<?>) {
             ListValue listValue = convertToListValue(fieldValue);
             valueBuilder.setListValue(listValue);
         } else {
-            valueBuilder.setSimpleValue(fieldValue.toString());
+            addSimpleValue(fieldValue, valueBuilder);
         }
         return valueBuilder.build();
     }
@@ -55,17 +83,46 @@ public class IMessageToProtoConverter {
         ListValue.Builder listBuilder = ListValue.newBuilder();
         var fieldList = (List<?>)fieldValue;
         if (!fieldList.isEmpty() && fieldList.get(0) instanceof IMessage) {
-            fieldList.forEach(message -> listBuilder.addValues(
-                            Value.newBuilder()
-                            .setMessageValue(convertComplex((IMessage)message))
-                            .build()
-                    ));
+            fieldList.forEach(message -> {
+                Value.Builder builder = Value.newBuilder();
+                if(message == null) {
+                    builder.setNullValue(NullValue.NULL_VALUE);
+                } else {
+                    builder.setMessageValue(convertComplex((IMessage)message));
+                }
+                listBuilder.addValues(builder.build());
+            });
         } else {
-            fieldList.forEach(value -> listBuilder.addValues(
-                            Value.newBuilder().setSimpleValue(value.toString()).build()
-                    ));
+            fieldList.forEach(value -> {
+                Value.Builder builder = Value.newBuilder();
+                if(value == null) {
+                    builder.setNullValue(NullValue.NULL_VALUE);
+                } else {
+                    addSimpleValue(value, builder);
+                }
+                listBuilder.addValues(builder.build());
+            });
         }
         return listBuilder.build();
+    }
+
+    private Builder addSimpleValue(Object fieldValue, Builder valueBuilder) {
+        String result = toSimpleValueString(fieldValue);
+        return valueBuilder.setSimpleValue(result);
+    }
+
+    private String toSimpleValueString(Object fieldValue) {
+        if (fieldValue instanceof BigDecimal) {
+            BigDecimal bd = (BigDecimal)fieldValue;
+            return (parameters.isStripTrailingZeros() ? bd.stripTrailingZeros() : bd).toPlainString();
+        }
+        if (fieldValue instanceof LocalDateTime) {
+            return ((LocalDateTime)fieldValue).format(parameters.getDateTimeFormatter());
+        }
+        if (fieldValue instanceof LocalTime) {
+            return ((LocalTime)fieldValue).format(parameters.getTimeFormatter());
+        }
+        return fieldValue.toString();
     }
 
     private Message convertComplex(IMessage fieldValue) {
@@ -76,5 +133,83 @@ public class IMessageToProtoConverter {
             nestedMessageBuilder.putFields(fieldName, convertedValue);
         }
         return nestedMessageBuilder.build();
+    }
+
+    public static Parameters.Builder parametersBuilder() {
+        return new Parameters.Builder();
+    }
+
+    public static class Parameters {
+        public static final Parameters DEFAULT = parametersBuilder().build();
+
+        private final boolean stripTrailingZeros;
+
+        private final DateTimeFormatter dateTimeFormatter;
+
+        private final DateTimeFormatter timeFormatter;
+
+        private Parameters(boolean stripTrailingZeros, DateTimeFormatter dateTimeFormatter, DateTimeFormatter timeFormatter) {
+            this.stripTrailingZeros = stripTrailingZeros;
+            this.dateTimeFormatter = requireNonNull(dateTimeFormatter, "'Date time formatter' parameter");
+            this.timeFormatter = requireNonNull(timeFormatter, "'Time formatter' parameter");
+        }
+
+        public boolean isStripTrailingZeros() {
+            return stripTrailingZeros;
+        }
+
+        public DateTimeFormatter getDateTimeFormatter() {
+            return dateTimeFormatter;
+        }
+
+        public DateTimeFormatter getTimeFormatter() {
+            return timeFormatter;
+        }
+
+        public static class Builder {
+            private static final DateTimeFormatter TIME_FORMATTER = new DateTimeFormatterBuilder()
+                    .parseCaseInsensitive()
+                    .appendValue(HOUR_OF_DAY, 2)
+                    .appendLiteral(':')
+                    .appendValue(MINUTE_OF_HOUR, 2)
+                    .appendLiteral(':')
+                    .appendValue(SECOND_OF_MINUTE, 2)
+                    .appendFraction(NANO_OF_SECOND, 3, 9, true)
+                    .toFormatter(Locale.getDefault(Category.FORMAT));
+            private static final DateTimeFormatter DATE_TIME_FORMATTER = new DateTimeFormatterBuilder()
+                    .parseCaseInsensitive()
+                    .append(ISO_LOCAL_DATE)
+                    .appendLiteral('T')
+                    .append(TIME_FORMATTER)
+                    .toFormatter(Locale.getDefault(Category.FORMAT));
+
+            private boolean stripTrailingZeros;
+
+            private DateTimeFormatter dateTimeFormatter = DATE_TIME_FORMATTER;
+
+            private DateTimeFormatter timeFormatter = TIME_FORMATTER;
+
+            private Builder() {
+            }
+
+            public Builder setStripTrailingZeros(boolean stripTrailingZeros) {
+                this.stripTrailingZeros = stripTrailingZeros;
+                return this;
+            }
+
+            public Builder setDateTimeFormatter(DateTimeFormatter dateTimeFormatter) {
+                this.dateTimeFormatter = dateTimeFormatter;
+                return this;
+            }
+
+            public Builder setTimeFormatter(DateTimeFormatter timeFormatter) {
+                this.timeFormatter = timeFormatter;
+                return this;
+            }
+
+            public Parameters build() {
+                return new Parameters(stripTrailingZeros, dateTimeFormatter, timeFormatter);
+            }
+        }
     }
 }

@@ -5,15 +5,16 @@ plugins {
     id 'java'
     id 'java-library'
     id 'maven-publish'
-    id "io.github.gradle-nexus.publish-plugin" version "1.0.0"
+    id "io.github.gradle-nexus.publish-plugin" version "1.1.0"
     id 'signing'
     id 'com.github.hierynomus.license' version '0.16.1'
+    id "org.owasp.dependencycheck" version "8.2.1"
 }
 
 ext {
     sharedDir           = file("${project.rootDir}/shared")
 
-    sailfishVersion     = '3.2.1049'
+    sailfishVersion = '3.3.106'
 }
 
 downloadLicenses {
@@ -31,22 +32,36 @@ repositories {
         name 'MavenLocal'
         url sharedDir
     }
+
+    maven {
+        name 'Sonatype_snapshots'
+        url 'https://s01.oss.sonatype.org/content/repositories/snapshots/'
+        metadataSources {
+            mavenPom()
+            artifact()
+            ignoreGradleMetadataRedirection()
+        }
+    }
+    maven {
+        name 'Sonatype_releases'
+        url 'https://s01.oss.sonatype.org/content/repositories/releases/'
+        metadataSources {
+            mavenPom()
+            artifact()
+            ignoreGradleMetadataRedirection()
+        }
+    }
     mavenCentral()
-    maven {
-            name 'Sonatype_snapshots'
-            url 'https://s01.oss.sonatype.org/content/repositories/snapshots/'
-    }
-    maven {
-            name 'Sonatype_releases'
-            url 'https://s01.oss.sonatype.org/content/repositories/releases/'
-    }
     mavenLocal()
 
     configurations.all {
-        resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
-        resolutionStrategy.cacheDynamicVersionsFor 0, 'seconds'
+        resolutionStrategy {
+            cacheChangingModulesFor 0, 'seconds'
+            cacheDynamicVersionsFor 0, 'seconds'
+        }
     }
 }
+
 
 group = 'com.exactpro.th2'
 version = release_version
@@ -55,20 +70,19 @@ sourceCompatibility = 11
 targetCompatibility = 11
 
 dependencies {
-    api platform('com.exactpro.th2:bom:3.0.0')
-    api 'com.exactpro.th2:common:3.13.4'
+    api platform('com.exactpro.th2:bom:4.1.0')
+    api 'com.exactpro.th2:common:3.44.0'
     api "com.exactpro.sf:sailfish-core:${sailfishVersion}"
 
-    implementation "org.slf4j:slf4j-log4j12"
     implementation "org.slf4j:slf4j-api"
-
     implementation "com.google.protobuf:protobuf-java-util"
 
     // Use JUnit Jupiter API for testing.
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.1'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.9.0'
 
-    // Use JUnit Jupiter Engine for testing.
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.1'
+
+    testImplementation 'org.openjdk.jmh:jmh-core:1.35'
+    testAnnotationProcessor 'org.openjdk.jmh:jmh-generator-annprocess:1.35'
 }
 
 java {
@@ -181,11 +195,23 @@ signing {
     sign publishing.publications.mavenJava
 }
 
-clean {
-    delete sharedDir
-}
-
 test {
     // Use junit platform for unit tests
     useJUnitPlatform()
+}
+
+
+dependencyLocking {
+    lockAllConfigurations()
+}
+
+dependencyCheck {
+    formats=['SARIF', 'JSON', 'HTML']
+    failBuildOnCVSS=5
+
+    analyzers {
+        assemblyEnabled = false
+        nugetconfEnabled = false
+        nodeEnabled = false
+    }
 }

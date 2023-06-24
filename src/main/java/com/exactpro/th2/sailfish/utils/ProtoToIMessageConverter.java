@@ -21,30 +21,50 @@ import static java.util.Objects.requireNonNull;
 import static org.apache.commons.lang3.ObjectUtils.defaultIfNull;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
+import com.exactpro.th2.common.grpc.NullValue;
+import com.exactpro.th2.sailfish.utils.filter.EqualityFilter;
+import com.exactpro.th2.sailfish.utils.filter.ExactNullFilter;
+import com.exactpro.th2.sailfish.utils.filter.IOperationFilter;
+import com.exactpro.th2.sailfish.utils.filter.NullFilter;
+import com.exactpro.th2.sailfish.utils.filter.precision.DecimalFilterWithPrecision;
+import com.exactpro.th2.sailfish.utils.filter.precision.TimeFilterWithPrecision;
 import org.apache.commons.lang3.BooleanUtils;
-import org.apache.commons.text.StringEscapeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.exactpro.sf.aml.scriptutil.StaticUtil;
+import com.exactpro.sf.common.impl.messages.xml.configuration.JavaType;
 import com.exactpro.sf.common.messages.IMessage;
 import com.exactpro.sf.common.messages.IMetadata;
 import com.exactpro.sf.common.messages.MetadataExtensions;
-import com.exactpro.sf.common.messages.MsgMetaData;
 import com.exactpro.sf.common.messages.structures.IAttributeStructure;
 import com.exactpro.sf.common.messages.structures.IDictionaryStructure;
 import com.exactpro.sf.common.messages.structures.IFieldStructure;
 import com.exactpro.sf.common.messages.structures.IMessageStructure;
-import com.exactpro.sf.common.util.StringUtil;
-import com.exactpro.sf.comparison.conversion.MultiConverter;
+import com.exactpro.sf.comparison.conversion.ConversionException;
+import com.exactpro.sf.comparison.conversion.IConverter;
+import com.exactpro.sf.comparison.conversion.impl.BigDecimalConverter;
+import com.exactpro.sf.comparison.conversion.impl.BooleanConverter;
+import com.exactpro.sf.comparison.conversion.impl.ByteConverter;
+import com.exactpro.sf.comparison.conversion.impl.CharacterConverter;
+import com.exactpro.sf.comparison.conversion.impl.DoubleConverter;
+import com.exactpro.sf.comparison.conversion.impl.FloatConverter;
+import com.exactpro.sf.comparison.conversion.impl.IntegerConverter;
+import com.exactpro.sf.comparison.conversion.impl.LocalDateConverter;
+import com.exactpro.sf.comparison.conversion.impl.LocalDateTimeConverter;
+import com.exactpro.sf.comparison.conversion.impl.LocalTimeConverter;
+import com.exactpro.sf.comparison.conversion.impl.LongConverter;
+import com.exactpro.sf.comparison.conversion.impl.ShortConverter;
+import com.exactpro.sf.comparison.conversion.impl.StringConverter;
 import com.exactpro.sf.configuration.suri.SailfishURI;
 import com.exactpro.sf.externalapi.IMessageFactoryProxy;
 import com.exactpro.th2.common.grpc.FilterOperation;
@@ -57,20 +77,69 @@ import com.exactpro.th2.common.grpc.MetadataFilter.SimpleFilter;
 import com.exactpro.th2.common.grpc.Value;
 import com.exactpro.th2.common.grpc.Value.KindCase;
 import com.exactpro.th2.common.grpc.ValueFilter;
+import com.exactpro.th2.sailfish.utils.filter.CompareFilter;
+import com.exactpro.th2.sailfish.utils.filter.ListContainFilter;
+import com.exactpro.th2.sailfish.utils.filter.RegExFilter;
+import com.exactpro.th2.sailfish.utils.filter.WildcardFilter;
+import com.exactpro.th2.sailfish.utils.filter.util.FilterUtils;
 import com.google.protobuf.InvalidProtocolBufferException;
 
 public class ProtoToIMessageConverter {
     private static final Logger logger = LoggerFactory.getLogger(ProtoToIMessageConverter.class.getName());
+    private static final Parameters DEFAULT_PARAMETERS = new Parameters();
     private final IMessageFactoryProxy messageFactory;
     private final IDictionaryStructure dictionary;
     private final SailfishURI dictionaryURI;
+    private final Parameters parameters;
+
+    public static class Parameters {
+        private boolean allowUnknownEnumValues;
+        private boolean useMarkerForNullsInMessage;
+
+        private Parameters() {
+        }
+
+        public boolean isAllowUnknownEnumValues() {
+            return allowUnknownEnumValues;
+        }
+
+        public Parameters setAllowUnknownEnumValues(boolean allowUnknownEnumValues) {
+            this.allowUnknownEnumValues = allowUnknownEnumValues;
+            return this;
+        }
+
+        public boolean isUseMarkerForNullsInMessage() {
+            return useMarkerForNullsInMessage;
+        }
+
+        /**
+         * Enables using {@link FilterUtils#NULL_VALUE} marker instead of {@code null} values when converting a message.
+         * Helps to distinct if filed was set in the original message with {@link NullValue} or there was no filed in message at all.
+         */
+        public Parameters setUseMarkerForNullsInMessage(boolean useMarkerForNullsInMessage) {
+            this.useMarkerForNullsInMessage = useMarkerForNullsInMessage;
+            return this;
+        }
+    }
 
     public ProtoToIMessageConverter(@NotNull IMessageFactoryProxy messageFactory,
                                     @Nullable IDictionaryStructure dictionaryStructure,
                                     SailfishURI dictionaryURI) {
+        this(messageFactory, dictionaryStructure, dictionaryURI, DEFAULT_PARAMETERS);
+    }
+
+    public ProtoToIMessageConverter(@NotNull IMessageFactoryProxy messageFactory,
+                                    @Nullable IDictionaryStructure dictionaryStructure,
+                                    SailfishURI dictionaryURI,
+                                    Parameters parameters) {
         this.messageFactory = requireNonNull(messageFactory, "'Message factory' parameter");
         this.dictionary = dictionaryStructure;
         this.dictionaryURI = dictionaryURI;
+        this.parameters = requireNonNull(parameters, "'parameters' cannot be null");
+    }
+
+    public static Parameters createParameters() {
+        return new Parameters();
     }
 
     public MessageWrapper fromProtoMessage(byte[] messageData, boolean useDictionary) throws InvalidProtocolBufferException {
@@ -102,62 +171,108 @@ public class ProtoToIMessageConverter {
         return messageWrapper;
     }
 
-    public IMessage fromProtoFilter(MessageFilter messageFilter, String messageName) {
+    public IMessage fromProtoFilter(MessageFilter messageFilter, FilterSettings filterSettings, String messageName) {
         if (logger.isDebugEnabled()) {
             logger.debug("Converting filter {} as {}", shortDebugString(messageFilter), messageName);
         }
         IMessage message = messageFactory.createMessage(dictionaryURI, messageName);
         for (Entry<String, ValueFilter> filterEntry : messageFilter.getFieldsMap().entrySet()) {
-            message.addField(filterEntry.getKey(), traverseFilterField(filterEntry.getKey(), filterEntry.getValue()));
+            message.addField(filterEntry.getKey(), traverseFilterField(filterEntry.getKey(), filterEntry.getValue(), filterSettings));
         }
 
         logger.debug("Filter '{}' converted {}", messageName, message);
         return message;
     }
 
-    public IMessage fromMetadataFilter(MetadataFilter filter, String messageName) {
+    public IMessage fromProtoFilter(MessageFilter messageFilter, String messageName) {
+        return fromProtoFilter(messageFilter, FilterSettings.DEFAULT_FILTER, messageName);
+    }
+
+    public IMessage fromMetadataFilter(MetadataFilter filter, FilterSettings filterSettings, String messageName) {
         if (logger.isTraceEnabled()) {
             logger.trace("Converting filter {} as {}", shortDebugString(filter), messageName);
         }
         IMessage message = messageFactory.createMessage(dictionaryURI, messageName);
         for (Entry<String, SimpleFilter> filterEntry : filter.getPropertyFiltersMap().entrySet()) {
             SimpleFilter propertyFilter = filterEntry.getValue();
-            message.addField(filterEntry.getKey(), toSimpleFilter(propertyFilter.getOperation(), propertyFilter.getValue()));
+            if (propertyFilter.hasSimpleList()) {
+                if (propertyFilter.getOperation() != FilterOperation.IN && propertyFilter.getOperation() != FilterOperation.NOT_IN) {
+                    throw new IllegalArgumentException(String.format("The operation doesn't match the values {%s}, {%s}", propertyFilter.getOperation(), propertyFilter.getSimpleList()));
+                }
+                message.addField(filterEntry.getKey(), new ListContainFilter(propertyFilter.getOperation(), propertyFilter.getSimpleList().getSimpleValuesList()));
+            } else {
+                message.addField(filterEntry.getKey(), toSimpleFilter(propertyFilter.getOperation(), propertyFilter.getValue(), filterSettings));
+            }
         }
 
         logger.trace("Metadata filter converted to '{}': {}", messageName, message);
         return message;
     }
 
-    private Object traverseFilterField(String fieldname, ValueFilter value) {
-        if (value.hasListFilter()) {
-            return traverseCollection(fieldname, value.getListFilter());
-        }
-        if (value.hasMessageFilter()) {
-            return fromProtoFilter(value.getMessageFilter(), fieldname);
-        }
-        return toSimpleFilter(value.getOperation(), value.getSimpleFilter());
+    public IMessage fromMetadataFilter(MetadataFilter filter, String messageName) {
+        return fromMetadataFilter(filter, FilterSettings.DEFAULT_FILTER, messageName);
     }
 
-    private Object toSimpleFilter(FilterOperation operation, String simpleFilter) {
+    private Object traverseFilterField(String fieldName, ValueFilter value, FilterSettings filterSettings) {
+        if (value.hasListFilter()) {
+            return traverseCollection(fieldName, value.getListFilter(), filterSettings);
+        }
+        if (value.hasMessageFilter()) {
+            return fromProtoFilter(value.getMessageFilter(), filterSettings, fieldName);
+        }
+        if (value.hasSimpleList()) {
+            if (value.getOperation() == FilterOperation.IN || value.getOperation() == FilterOperation.NOT_IN) {
+                return new ListContainFilter(value.getOperation(), value.getSimpleList().getSimpleValuesList());
+            }
+            throw new IllegalArgumentException(String.format("The operation doesn't match the values {%s}, {%s}", value.getOperation(), value.getSimpleList()));
+        }
+        if (value.getKindCase() == ValueFilter.KindCase.NULL_VALUE) {
+            return toNullFilter(value.getOperation(), filterSettings);
+        }
+        return toSimpleFilter(value.getOperation(), value.getSimpleFilter(), filterSettings);
+    }
+
+    private IOperationFilter toNullFilter(FilterOperation operation, FilterSettings filterSettings) {
+        if (operation != FilterOperation.EQUAL && operation != FilterOperation.NOT_EQUAL) {
+            throw new IllegalArgumentException("Null value can be used only with " + FilterOperation.EQUAL + " and " + FilterOperation.NOT_EQUAL
+                    + " operations but was used with " + operation);
+        }
+        return new ExactNullFilter(operation == FilterOperation.EQUAL);
+    }
+
+    private Object toSimpleFilter(FilterOperation operation, String simpleFilter, FilterSettings filterSettings) {
         switch (operation) {
             case EQUAL:
-                return StaticUtil.simpleFilter(0, null, StringUtil.enclose(StringEscapeUtils.escapeJava(simpleFilter)));
+                return new EqualityFilter(simpleFilter, true);
             case NOT_EQUAL:
-                // Enclose value to single quotes isn't required for arguments
-                return StaticUtil.filter(0, null, "x != value", "value", simpleFilter);
+                return new EqualityFilter(simpleFilter, false);
             case EMPTY:
-                return StaticUtil.nullFilter(0, null);
+                return NullFilter.nullValue(filterSettings.isCheckNullValueAsEmpty());
             case NOT_EMPTY:
-                return StaticUtil.notNullFilter(0, null);
+                return NullFilter.notNullValue(filterSettings.isCheckNullValueAsEmpty());
+            case LIKE:
+            case NOT_LIKE:
+                return new RegExFilter(operation, simpleFilter);
+            case LESS:
+            case NOT_LESS:
+            case MORE:
+            case NOT_MORE:
+                return new CompareFilter(operation, simpleFilter);
+            case WILDCARD:
+            case NOT_WILDCARD:
+                return new WildcardFilter(operation, simpleFilter);
+            case EQ_DECIMAL_PRECISION:
+                return new DecimalFilterWithPrecision(simpleFilter, filterSettings);
+            case EQ_TIME_PRECISION:
+                return new TimeFilterWithPrecision(simpleFilter, filterSettings);
             default:
                 throw new IllegalArgumentException("Unsupported operation " + operation);
         }
     }
 
-    private Object traverseCollection(String fieldName, ListValueFilter listFilter) {
+    private Object traverseCollection(String fieldName, ListValueFilter listFilter, FilterSettings filterSettings) {
         return listFilter.getValuesList().stream()
-                .map(value -> traverseFilterField(fieldName, value))
+                .map(value -> traverseFilterField(fieldName, value, filterSettings))
                 .collect(Collectors.toList());
     }
 
@@ -215,12 +330,20 @@ public class ProtoToIMessageConverter {
     }
 
     private Object traverseField(String fieldName, Value fieldValue) {
-        if (fieldValue.hasMessageValue()) {
-            return convertWithoutDictionary(fieldValue.getMessageValue().getFieldsMap(), fieldName);
-        } else if (fieldValue.hasListValue()) {
-            return convertList(fieldName, fieldValue.getListValue());
+        switch (fieldValue.getKindCase()) {
+            case SIMPLE_VALUE:
+                return fieldValue.getSimpleValue();
+            case MESSAGE_VALUE:
+                return convertWithoutDictionary(fieldValue.getMessageValue().getFieldsMap(), fieldName);
+            case LIST_VALUE:
+                return convertList(fieldName, fieldValue.getListValue());
+            case NULL_VALUE:
+                return parameters.isUseMarkerForNullsInMessage() ? FilterUtils.NULL_VALUE : null;
+            default:
+                throw new IllegalArgumentException(String.format(
+                        "The field '%s' cannot be traversed, because it has an unrecognized type '%s'", fieldName, fieldValue.getKindCase()
+                ));
         }
-        return fieldValue.getSimpleValue();
     }
 
     private List<?> convertList(String fieldName, ListValue list) {
@@ -246,26 +369,49 @@ public class ProtoToIMessageConverter {
 
     @Nullable
     private Object convertToTarget(Value value, IFieldStructure fieldStructure) {
-        try {
-            KindCase kindCase = value.getKindCase();
-            if (kindCase == KindCase.NULL_VALUE || kindCase == KindCase.KIND_NOT_SET) {
-                return null; // skip null value conversion
-            }
-            checkKind(value, fieldStructure.getName(), KindCase.SIMPLE_VALUE);
-            String simpleValue = value.getSimpleValue();
-            if (fieldStructure.isEnum()) {
-                simpleValue = convertEnumValue(fieldStructure, simpleValue);
-            }
-            // TODO may be place its logic into the MultiConverter
-            if (fieldStructure.getJavaType() == JAVA_LANG_BOOLEAN) {
-                return BooleanUtils.toBooleanObject(simpleValue);
-            }
-            return MultiConverter.convert(simpleValue,
-                        Class.forName(fieldStructure.getJavaType().value()));
-        } catch (ClassNotFoundException e) {
-            logger.error("Could not convert {} value", value, e);
-            throw new RuntimeException(e);
+        KindCase kindCase = value.getKindCase();
+        if (kindCase == KindCase.NULL_VALUE || kindCase == KindCase.KIND_NOT_SET) {
+            return parameters.isUseMarkerForNullsInMessage() ? FilterUtils.NULL_VALUE : null; // skip null value conversion
         }
+        checkKind(value, fieldStructure.getName(), KindCase.SIMPLE_VALUE);
+        String simpleValue = value.getSimpleValue();
+        if (fieldStructure.isEnum()) {
+            simpleValue = convertEnumValue(fieldStructure, simpleValue);
+        }
+        // TODO may be place its logic into the MultiConverter
+        if (fieldStructure.getJavaType() == JAVA_LANG_BOOLEAN) {
+            return BooleanUtils.toBooleanObject(simpleValue);
+        }
+        return convertJavaType(simpleValue, fieldStructure.getJavaType());
+    }
+
+    private static final Map<JavaType, IConverter<?>> CONVERTERS = initConverters();
+
+    private static Map<JavaType, IConverter<?>> initConverters() {
+        Map<JavaType, IConverter<?>> target = new HashMap<>();
+        target.put(JavaType.JAVA_LANG_BOOLEAN, new BooleanConverter());
+        target.put(JavaType.JAVA_LANG_BYTE, new ByteConverter());
+        target.put(JavaType.JAVA_LANG_SHORT, new ShortConverter());
+        target.put(JavaType.JAVA_LANG_INTEGER, new IntegerConverter());
+        target.put(JavaType.JAVA_LANG_LONG, new LongConverter());
+        target.put(JavaType.JAVA_LANG_FLOAT, new FloatConverter());
+        target.put(JavaType.JAVA_LANG_DOUBLE, new DoubleConverter());
+        target.put(JavaType.JAVA_MATH_BIG_DECIMAL, new BigDecimalConverter());
+        target.put(JavaType.JAVA_LANG_CHARACTER, new CharacterConverter());
+        target.put(JavaType.JAVA_LANG_STRING, new StringConverter());
+        target.put(JavaType.JAVA_TIME_LOCAL_DATE, new LocalDateConverter());
+        target.put(JavaType.JAVA_TIME_LOCAL_TIME, new LocalTimeConverter());
+        target.put(JavaType.JAVA_TIME_LOCAL_DATE_TIME, new LocalDateTimeConverter());
+        return target;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> T convertJavaType(Object value,  JavaType javaType) {
+        IConverter<?> converter = CONVERTERS.get(javaType);
+        if (converter == null) {
+            throw new ConversionException("No converter for type: " + javaType.value());
+        }
+        return (T)converter.convert(value);
     }
 
     private String convertEnumValue(IFieldStructure fieldStructure, String value) {
@@ -274,6 +420,9 @@ public class ProtoToIMessageConverter {
             if (enumEntry.getKey().equals(value) || enumValue.equals(value)) {
                 return enumValue;
             }
+        }
+        if (parameters.isAllowUnknownEnumValues()) {
+            return value;
         }
         throw new UnknownEnumException(fieldStructure.getName(), value, fieldStructure.getNamespace());
     }
