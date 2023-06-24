@@ -4,7 +4,7 @@ plugins {
     id 'maven-publish'
     id "io.github.gradle-nexus.publish-plugin" version "1.0.0"
     id 'signing'
-    // id 'com.github.hierynomus.license' version '0.15.0'
+    id 'com.github.hierynomus.license' version '0.16.1'
 }
 
 ext {
@@ -13,10 +13,14 @@ ext {
     sailfishVersion     = '3.2.1049'
 }
 
-// downloadLicenses {
-//     includeProjectDependencies = true
-//     dependencyConfiguration = "compileClasspath"
-// }
+downloadLicenses {
+    includeProjectDependencies = true
+    dependencyConfiguration = "compileClasspath"
+}
+
+license {
+    ignoreFailures = true
+}
 
 repositories {
     maven {
