@@ -1,3 +1,6 @@
+import java.time.Instant
+import java.time.ZoneOffset
+
 plugins {
     id 'java'
     id 'java-library'
@@ -19,7 +22,8 @@ downloadLicenses {
 }
 
 license {
-    ignoreFailures = true
+    header = rootProject.file('codequality/HEADER')
+    ext.year = Instant.now().atZone(ZoneOffset.UTC).format("yyyy")
 }
 
 repositories {
