@@ -1,5 +1,5 @@
-/*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+/**
+ * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,18 +15,17 @@
  */
 package com.exactpro.th2.sailfish.utils.filter;
 
+import com.exactpro.sf.aml.scriptutil.ExpressionResult;
+import com.exactpro.th2.common.grpc.FilterOperation;
+import com.exactpro.th2.sailfish.utils.filter.util.FilterUtils;
+import org.jetbrains.annotations.NotNull;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.util.Objects;
-
-import org.jetbrains.annotations.NotNull;
-
-import com.exactpro.sf.aml.scriptutil.ExpressionResult;
-import com.exactpro.th2.common.grpc.FilterOperation;
-import com.exactpro.th2.sailfish.utils.filter.util.FilterUtils;
 
 public class CompareFilter extends AbstractNotNullFilter {
 

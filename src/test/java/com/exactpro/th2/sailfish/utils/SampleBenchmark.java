@@ -1,5 +1,5 @@
-/*
- * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+/**
+ * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,10 +21,21 @@ import com.exactpro.sf.common.messages.structures.loaders.XmlDictionaryStructure
 import com.exactpro.sf.comparison.ComparatorSettings;
 import com.exactpro.sf.comparison.ComparisonResult;
 import com.exactpro.sf.configuration.suri.SailfishURI;
-import com.exactpro.th2.common.grpc.*;
+import com.exactpro.th2.common.grpc.ListValue;
+import com.exactpro.th2.common.grpc.Message;
+import com.exactpro.th2.common.grpc.MessageMetadata;
+import com.exactpro.th2.common.grpc.NullValue;
+import com.exactpro.th2.common.grpc.Value;
 import com.exactpro.th2.sailfish.utils.factory.DefaultMessageFactoryProxy;
 import com.google.common.collect.ImmutableList;
-import org.openjdk.jmh.annotations.*;
+import org.openjdk.jmh.annotations.Benchmark;
+import org.openjdk.jmh.annotations.BenchmarkMode;
+import org.openjdk.jmh.annotations.Fork;
+import org.openjdk.jmh.annotations.Mode;
+import org.openjdk.jmh.annotations.OutputTimeUnit;
+import org.openjdk.jmh.annotations.Scope;
+import org.openjdk.jmh.annotations.State;
+import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.infra.Blackhole;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
@@ -32,12 +43,14 @@ import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+
 import static com.exactpro.sf.comparison.MessageComparator.compare;
 
 

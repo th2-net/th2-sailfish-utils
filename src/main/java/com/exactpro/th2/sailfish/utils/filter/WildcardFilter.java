@@ -1,5 +1,5 @@
-/*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+/**
+ * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,13 +15,12 @@
  */
 package com.exactpro.th2.sailfish.utils.filter;
 
-import java.util.Objects;
-
+import com.exactpro.sf.aml.scriptutil.ExpressionResult;
+import com.exactpro.th2.common.grpc.FilterOperation;
 import org.apache.commons.io.FilenameUtils;
 import org.jetbrains.annotations.NotNull;
 
-import com.exactpro.sf.aml.scriptutil.ExpressionResult;
-import com.exactpro.th2.common.grpc.FilterOperation;
+import java.util.Objects;
 
 public class WildcardFilter extends AbstractNotNullFilter {
 

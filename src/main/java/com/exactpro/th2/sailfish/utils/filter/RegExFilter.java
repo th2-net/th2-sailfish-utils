@@ -1,5 +1,5 @@
-/*
- * Copyright 2021-2021 Exactpro (Exactpro Systems Limited)
+/**
+ * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +15,13 @@
  */
 package com.exactpro.th2.sailfish.utils.filter;
 
+import com.exactpro.sf.aml.scriptutil.ExpressionResult;
+import com.exactpro.th2.common.grpc.FilterOperation;
+import org.jetbrains.annotations.NotNull;
+
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import org.jetbrains.annotations.NotNull;
-
-import com.exactpro.sf.aml.scriptutil.ExpressionResult;
-import com.exactpro.th2.common.grpc.FilterOperation;
 
 public class RegExFilter extends AbstractNotNullFilter {
 
