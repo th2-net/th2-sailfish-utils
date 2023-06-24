@@ -5,7 +5,7 @@ plugins {
     id 'org.jetbrains.kotlin.jvm' version "${kotlin_version}"
     id "io.github.gradle-nexus.publish-plugin" version "1.1.0"
     id 'signing'
-    id "org.owasp.dependencycheck" version "8.1.2"
+    id "org.owasp.dependencycheck" version "8.2.1"
     id "me.champeau.jmh" version "0.6.8"
 }
 
@@ -51,8 +51,8 @@ sourceCompatibility = 11
 targetCompatibility = 11
 
 dependencies {
-    api platform('com.exactpro.th2:bom:4.2.0')
-    api 'com.exactpro.th2:common:5.2.0-json-raw-body-5080623849-ed74414-SNAPSHOT'
+    api platform('com.exactpro.th2:bom:4.4.0-update-libs-5335052162-8affa4a-SNAPSHOT')
+    api 'com.exactpro.th2:common:5.3.0-separate-executor-5347518176-63bc4ea-SNAPSHOT'
     api "com.exactpro.sf:sailfish-core:${sailfishVersion}"
 
     implementation 'com.exactpro.th2:common-utils:2.1.0-transport-protocol-5111641574-c00bdcf-SNAPSHOT'
@@ -61,7 +61,7 @@ dependencies {
     implementation "com.google.protobuf:protobuf-java-util"
 
     // Use JUnit Jupiter API for testing.
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.9.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.9.3'
     testImplementation "org.jetbrains.kotlin:kotlin-test-junit:${kotlin_version}"
 
     jmh 'org.openjdk.jmh:jmh-core:1.36'
@@ -108,7 +108,7 @@ jmhJar {
 }
 
 // conditionals for publications
-tasks.withType(PublishToMavenRepository) {
+tasks.withType(PublishToMavenRepository).configureEach {
     onlyIf {
         (repository == publishing.repositories.nexusRepository &&
                 project.hasProperty('nexus_user') &&
@@ -119,14 +119,14 @@ tasks.withType(PublishToMavenRepository) {
                         project.hasProperty('sonatypePassword'))
     }
 }
-tasks.withType(Sign) {
+tasks.withType(Sign).configureEach {
     onlyIf {
         project.hasProperty('signingKey') &&
                 project.hasProperty('signingPassword')
     }
 }
 // disable running task 'initializeSonatypeStagingRepository' on a gitlab
-tasks.whenTaskAdded { task ->
+tasks.configureEach { task ->
     if (task.name.equals('initializeSonatypeStagingRepository') &&
             !(project.hasProperty('sonatypeUsername') && project.hasProperty('sonatypePassword'))
     ) {
@@ -188,8 +188,8 @@ nexusPublishing {
 }
 
 signing {
-    def signingKey = findProperty("signingKey")
-    def signingPassword = findProperty("signingPassword")
+    String signingKey = findProperty("signingKey")
+    String signingPassword = findProperty("signingPassword")
     useInMemoryPgpKeys(signingKey, signingPassword)
     sign publishing.publications.mavenJava
 }
