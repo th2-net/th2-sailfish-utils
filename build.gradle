@@ -53,7 +53,8 @@ targetCompatibility = 11
 dependencies {
     api platform('com.exactpro.th2:bom:4.4.0-update-libs-5335052162-8affa4a-SNAPSHOT')
     api('com.exactpro.th2:common:5.3.0-separate-executor-5347518176-63bc4ea-SNAPSHOT') {
-        exclude group: 'com.exactpro.th2', module: 'task-utils'
+        exclude group: 'com.exactpro.th2', module: 'cradle-core'
+        exclude group: 'com.exactpro.th2', module: 'cradle-cassandra'
     }
     api "com.exactpro.sf:sailfish-core:${sailfishVersion}"
 
