@@ -25,6 +25,10 @@ downloadLicenses {
 license {
     header = rootProject.file('codequality/HEADER')
     ext.year = Instant.now().atZone(ZoneOffset.UTC).format("yyyy")
+
+    mapping('java', 'SLASHSTAR_STYLE')
+    mapping('kt', 'SLASHSTAR_STYLE')
+    mapping('kts', 'SLASHSTAR_STYLE')
 }
 
 repositories {
