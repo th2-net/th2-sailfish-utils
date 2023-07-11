@@ -17,6 +17,7 @@ package com.exactpro.th2.sailfish.utils.transport
 
 import com.exactpro.sf.common.messages.IMessage
 import com.exactpro.th2.common.schema.message.impl.rabbitmq.transport.ParsedMessage
+import com.exactpro.th2.common.schema.message.impl.rabbitmq.transport.RawMessage
 import com.exactpro.th2.sailfish.utils.FromSailfishParameters
 import java.math.BigDecimal
 import java.time.LocalDateTime
@@ -24,14 +25,14 @@ import java.time.LocalTime
 
 class IMessageToTransportConverter @JvmOverloads constructor(private val parameters: FromSailfishParameters = FromSailfishParameters.DEFAULT) {
 
-    fun toTransport(message: IMessage): ParsedMessage = ParsedMessage.builder().apply {
+    fun toTransport(message: IMessage): ParsedMessage.FromMapBuilder = ParsedMessage.builder().apply {
         setType(message.name)
         setBody(
             message.fieldNames.asSequence()
                 .mapNotNull { fieldName -> message.getField<Any?>(fieldName)?.let { fieldName to it.toTransport() } }
                 .toMap()
         )
-    }.build()
+    }
 
     private fun Any.toTransport(): Any = when (this) {
         is IMessage -> toTransportSubMessage()
