@@ -20,7 +20,6 @@ import com.exactpro.sf.comparison.ComparatorSettings;
 import com.exactpro.sf.comparison.ComparisonResult;
 import com.exactpro.sf.comparison.ComparisonUtil;
 import com.exactpro.sf.comparison.MessageComparator;
-import com.exactpro.sf.configuration.suri.SailfishURI;
 import com.exactpro.sf.scriptrunner.StatusType;
 import com.exactpro.th2.common.grpc.FilterOperation;
 import com.exactpro.th2.common.grpc.Message;
@@ -35,7 +34,6 @@ import com.exactpro.th2.sailfish.utils.FilterSettings;
 import com.exactpro.th2.sailfish.utils.MessageWrapper;
 import com.exactpro.th2.sailfish.utils.ProtoToIMessageConverter;
 import com.exactpro.th2.sailfish.utils.RootComparisonSettingsUtils;
-import com.exactpro.th2.sailfish.utils.factory.DefaultMessageFactoryProxy;
 import com.google.protobuf.Duration;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -49,15 +47,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import static com.exactpro.th2.sailfish.utils.ProtoToIMessageConverter.DEFAULT_MESSAGE_FACTORY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class ImplementationIFilterTest extends AbstractConverterTest {
     private static final String MESSAGE_TYPE = "TestMsg";
-    private static final DefaultMessageFactoryProxy MESSAGE_FACTORY = new DefaultMessageFactoryProxy();
-    private final static SailfishURI DICTIONARY_URI = SailfishURI.unsafeParse("test");
     private final ProtoToIMessageConverter converter = new ProtoToIMessageConverter(
-            MESSAGE_FACTORY, null, DICTIONARY_URI
+            DEFAULT_MESSAGE_FACTORY, null
     );
 
     private static List<Arguments> inOperationFilter() {
@@ -268,10 +265,10 @@ public class ImplementationIFilterTest extends AbstractConverterTest {
 
     private static List<Arguments> twoTimeFilterOperationWithPrecision() {
         return List.of(
-                Arguments.of("2007-12-03T10:15:30", "2007-12-03T10:15:35", createDuration(5), StatusType.PASSED),
-                Arguments.of("2007-12-03T10:15:30", "2007-12-03T10:15:36", createDuration(5), StatusType.FAILED),
-                Arguments.of("2007-12-03T10:15:30", "2007-12-03T10:15:35.100000000", createDuration(5, 100000000), StatusType.PASSED),
-                Arguments.of("2007-12-03T10:15:30", "2007-12-03T10:15:35.100000001", createDuration(5, 100000000), StatusType.FAILED)
+                Arguments.of("2007-12-03T10:15:30", "2007-12-03T10:15:35", createDuration(), StatusType.PASSED),
+                Arguments.of("2007-12-03T10:15:30", "2007-12-03T10:15:36", createDuration(), StatusType.FAILED),
+                Arguments.of("2007-12-03T10:15:30", "2007-12-03T10:15:35.100000000", createDuration(100000000), StatusType.PASSED),
+                Arguments.of("2007-12-03T10:15:30", "2007-12-03T10:15:35.100000001", createDuration(100000000), StatusType.FAILED)
         );
     }
 
@@ -420,7 +417,7 @@ public class ImplementationIFilterTest extends AbstractConverterTest {
                         .putFields("A", valueFilter)
                         .build())
                 .build();
-        
+
         Message actual = createMessageBuilder(MESSAGE_TYPE)
                 .putFields("A", messageValue)
                 .build();
@@ -442,12 +439,12 @@ public class ImplementationIFilterTest extends AbstractConverterTest {
                 Arguments.of(FilterOperation.NOT_EMPTY, StatusType.FAILED, true)
         );
     }
-    
+
     @ParameterizedTest
     @MethodSource("nullFilterPairs")
     void testNullFilter(FilterOperation operation, StatusType status, boolean checkNullValueAsEmpty) {
         ProtoToIMessageConverter converter = new ProtoToIMessageConverter(
-                MESSAGE_FACTORY, null, DICTIONARY_URI, ProtoToIMessageConverter.createParameters().setUseMarkerForNullsInMessage(true)
+                DEFAULT_MESSAGE_FACTORY, null, ProtoToIMessageConverter.createParameters().setUseMarkerForNullsInMessage(true)
         );
         Message message = createMessageBuilder("Test")
                 .putFields("A", nullValue())
@@ -459,7 +456,7 @@ public class ImplementationIFilterTest extends AbstractConverterTest {
 
         FilterSettings filterSettings = new FilterSettings();
         filterSettings.setCheckNullValueAsEmpty(checkNullValueAsEmpty);
-        IMessage expected = converter.fromProtoFilter(messageFilter, filterSettings,"Test");
+        IMessage expected = converter.fromProtoFilter(messageFilter, filterSettings, "Test");
         IMessage actual = converter.fromProtoMessage(message, false);
 
         ComparisonResult result = MessageComparator.compare(actual, expected, new ComparatorSettings());
@@ -477,19 +474,19 @@ public class ImplementationIFilterTest extends AbstractConverterTest {
                     filter.getMessageType());
         } else {
             filterIMessage = converter.fromProtoFilter(filter.getMessageFilter(), filter.getMessageType());
-        } 
+        }
 
         return MessageComparator.compare(actualIMessage, filterIMessage, new ComparatorSettings());
     }
-    
-    private static Duration createDuration(long seconds, int nanos) {
+
+    private static Duration createDuration(int nanos) {
         return Duration.newBuilder()
-                .setSeconds(seconds)
+                .setSeconds(5)
                 .setNanos(nanos)
                 .build();
     }
 
-    private static Duration createDuration(long seconds) {
-        return createDuration(seconds, 0);
+    private static Duration createDuration() {
+        return createDuration(0);
     }
 }

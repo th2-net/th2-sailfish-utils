@@ -15,8 +15,10 @@
  */
 package com.exactpro.th2.sailfish.utils;
 
+import com.exactpro.sf.common.impl.messages.DefaultMessageFactory;
 import com.exactpro.sf.common.impl.messages.xml.configuration.JavaType;
 import com.exactpro.sf.common.messages.IMessage;
+import com.exactpro.sf.common.messages.IMessageFactory;
 import com.exactpro.sf.common.messages.IMetadata;
 import com.exactpro.sf.common.messages.MetadataExtensions;
 import com.exactpro.sf.common.messages.structures.IAttributeStructure;
@@ -38,8 +40,6 @@ import com.exactpro.sf.comparison.conversion.impl.LocalTimeConverter;
 import com.exactpro.sf.comparison.conversion.impl.LongConverter;
 import com.exactpro.sf.comparison.conversion.impl.ShortConverter;
 import com.exactpro.sf.comparison.conversion.impl.StringConverter;
-import com.exactpro.sf.configuration.suri.SailfishURI;
-import com.exactpro.sf.externalapi.IMessageFactoryProxy;
 import com.exactpro.th2.common.grpc.FilterOperation;
 import com.exactpro.th2.common.grpc.ListValue;
 import com.exactpro.th2.common.grpc.ListValueFilter;
@@ -85,10 +85,13 @@ import static org.apache.commons.lang3.ObjectUtils.defaultIfNull;
 public class ProtoToIMessageConverter {
     private static final Logger logger = LoggerFactory.getLogger(ProtoToIMessageConverter.class.getName());
     private static final Parameters DEFAULT_PARAMETERS = new Parameters();
-    private final IMessageFactoryProxy messageFactory;
+    private static final String UNKNOWN_NAMESPACE = "unknown";
+    private final IMessageFactory messageFactory;
     private final IDictionaryStructure dictionary;
-    private final SailfishURI dictionaryURI;
+    private final String namespace;
     private final Parameters parameters;
+
+    public static final IMessageFactory DEFAULT_MESSAGE_FACTORY = DefaultMessageFactory.getFactory();
 
     public static class Parameters {
         private boolean allowUnknownEnumValues;
@@ -120,23 +123,36 @@ public class ProtoToIMessageConverter {
         }
     }
 
-    public ProtoToIMessageConverter(
-            @NotNull IMessageFactoryProxy messageFactory,
-            @Nullable IDictionaryStructure dictionaryStructure,
-            SailfishURI dictionaryURI
-    ) {
-        this(messageFactory, dictionaryStructure, dictionaryURI, DEFAULT_PARAMETERS);
+    public ProtoToIMessageConverter() {
+        this(DEFAULT_MESSAGE_FACTORY, null, DEFAULT_PARAMETERS);
+    }
+
+    public ProtoToIMessageConverter(@Nullable IDictionaryStructure dictionaryStructure) {
+        this(DEFAULT_MESSAGE_FACTORY, dictionaryStructure);
     }
 
     public ProtoToIMessageConverter(
-            @NotNull IMessageFactoryProxy messageFactory,
+            @NotNull IMessageFactory messageFactory,
+            @Nullable IDictionaryStructure dictionaryStructure
+    ) {
+        this(messageFactory, dictionaryStructure, DEFAULT_PARAMETERS);
+    }
+
+    public ProtoToIMessageConverter(
             @Nullable IDictionaryStructure dictionaryStructure,
-            SailfishURI dictionaryURI,
+            Parameters parameters
+    ) {
+        this(DEFAULT_MESSAGE_FACTORY, dictionaryStructure, parameters);
+    }
+
+    public ProtoToIMessageConverter(
+            @NotNull IMessageFactory messageFactory,
+            @Nullable IDictionaryStructure dictionaryStructure,
             Parameters parameters
     ) {
         this.messageFactory = requireNonNull(messageFactory, "'Message factory' parameter");
         this.dictionary = dictionaryStructure;
-        this.dictionaryURI = dictionaryURI;
+        this.namespace = dictionaryStructure == null ? UNKNOWN_NAMESPACE : dictionaryStructure.getNamespace();
         this.parameters = requireNonNull(parameters, "'parameters' cannot be null");
     }
 
@@ -177,7 +193,7 @@ public class ProtoToIMessageConverter {
         if (logger.isDebugEnabled()) {
             logger.debug("Converting filter {} as {}", shortDebugString(messageFilter), messageName);
         }
-        IMessage message = messageFactory.createMessage(dictionaryURI, messageName);
+        IMessage message = messageFactory.createMessage(messageName, namespace);
         for (Entry<String, ValueFilter> filterEntry : messageFilter.getFieldsMap().entrySet()) {
             message.addField(filterEntry.getKey(), traverseFilterField(filterEntry.getKey(), filterEntry.getValue(), filterSettings));
         }
@@ -194,7 +210,7 @@ public class ProtoToIMessageConverter {
         if (logger.isTraceEnabled()) {
             logger.trace("Converting filter {} as {}", shortDebugString(filter), messageName);
         }
-        IMessage message = messageFactory.createMessage(dictionaryURI, messageName);
+        IMessage message = messageFactory.createMessage(messageName, namespace);
         for (Entry<String, SimpleFilter> filterEntry : filter.getPropertyFiltersMap().entrySet()) {
             SimpleFilter propertyFilter = filterEntry.getValue();
             if (propertyFilter.hasSimpleList()) {
@@ -213,6 +229,10 @@ public class ProtoToIMessageConverter {
 
     public IMessage fromMetadataFilter(MetadataFilter filter, String messageName) {
         return fromMetadataFilter(filter, FilterSettings.DEFAULT_FILTER, messageName);
+    }
+
+    public String getNamespace() {
+        return namespace;
     }
 
     private Object traverseFilterField(String fieldName, ValueFilter value, FilterSettings filterSettings) {
@@ -299,8 +319,10 @@ public class ProtoToIMessageConverter {
     }
 
     private IMessage convertByDictionary(Map<String, Value> fieldsMap, @NotNull IFieldStructure messageStructure, boolean isRoot) {
-        IMessage message = messageFactory.createMessage(dictionaryURI,
-                isRoot ? messageStructure.getName() : defaultIfNull(messageStructure.getReferenceName(), messageStructure.getName()));
+        IMessage message = messageFactory.createMessage(
+                isRoot ? messageStructure.getName() : defaultIfNull(messageStructure.getReferenceName(), messageStructure.getName()),
+                namespace
+        );
         for (Entry<String, Value> fieldEntry : fieldsMap.entrySet()) {
             String fieldName = fieldEntry.getKey();
             Value fieldValue = fieldEntry.getValue();
@@ -320,7 +342,7 @@ public class ProtoToIMessageConverter {
     }
 
     private IMessage convertWithoutDictionary(Map<String, Value> fieldsMap, String messageType) {
-        IMessage message = messageFactory.createMessage(dictionaryURI, messageType);
+        IMessage message = messageFactory.createMessage(messageType, namespace);
         for (Entry<String, Value> fieldEntry : fieldsMap.entrySet()) {
             String fieldName = fieldEntry.getKey();
             Value fieldValue = fieldEntry.getValue();

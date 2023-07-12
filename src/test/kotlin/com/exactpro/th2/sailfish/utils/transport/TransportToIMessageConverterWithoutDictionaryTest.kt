@@ -15,9 +15,9 @@
  */
 package com.exactpro.th2.sailfish.utils.transport
 
-import com.exactpro.sf.aml.scriptutil.StaticUtil.IFilter
 import com.exactpro.sf.common.messages.IMessage
 import com.exactpro.sf.comparison.ComparatorSettings
+import com.exactpro.sf.comparison.IComparisonFilter
 import com.exactpro.sf.comparison.MessageComparator
 import com.exactpro.sf.scriptrunner.StatusType
 import com.exactpro.th2.common.grpc.FilterOperation
@@ -26,8 +26,8 @@ import com.exactpro.th2.common.grpc.SimpleList
 import com.exactpro.th2.common.schema.message.impl.rabbitmq.transport.ParsedMessage
 import com.exactpro.th2.sailfish.utils.MessageWrapper
 import com.exactpro.th2.sailfish.utils.ProtoToIMessageConverter
-import com.exactpro.th2.sailfish.utils.factory.DefaultMessageFactoryProxy
 import com.exactpro.th2.sailfish.utils.filter.IOperationFilter
+import com.exactpro.th2.sailfish.utils.transport.TransportToIMessageConverter.Companion.DEFAULT_MESSAGE_FACTORY
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -37,13 +37,8 @@ import org.junit.jupiter.params.provider.MethodSource
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 internal class TransportToIMessageConverterWithoutDictionaryTest : AbstractTransportToIMessageConverterTest() {
-    private val messageFactory = DefaultMessageFactoryProxy()
-    private val transportConverter = TransportToIMessageConverter(
-        DefaultMessageFactoryProxy(), null, dictionaryURI
-    )
-    private val protoConverter = ProtoToIMessageConverter(
-        DefaultMessageFactoryProxy(), null, dictionaryURI
-    )
+    private val transportConverter = TransportToIMessageConverter()
+    private val protoConverter = ProtoToIMessageConverter()
 
     @Test
     fun convertsMessage() {
@@ -80,13 +75,13 @@ internal class TransportToIMessageConverterWithoutDictionaryTest : AbstractTrans
             }
         }.build()
 
-        val simple = messageFactory.createMessage(dictionaryURI, "Simple")
+        val simple = DEFAULT_MESSAGE_FACTORY.createMessage("Simple", transportConverter.namespace)
         simple.addField("Field", "A")
         val simple0 = simple.cloneMessage()
         simple0.addField("Index", "0")
         val simple1 = simple.cloneMessage()
         simple1.addField("Index", "1")
-        val actualInnerMessage = messageFactory.createMessage(dictionaryURI, "InnerMessage")
+        val actualInnerMessage = DEFAULT_MESSAGE_FACTORY.createMessage("InnerMessage", transportConverter.namespace)
         actualInnerMessage.addField("Simple", "hello")
         actualInnerMessage.addField("SimpleList", listOf("1", "2"))
         actualInnerMessage.addField("ComplexField", simple)
@@ -95,7 +90,7 @@ internal class TransportToIMessageConverterWithoutDictionaryTest : AbstractTrans
         actualInner0.addField("Index", "0")
         val actualInner1 = actualInnerMessage.cloneMessage()
         actualInner1.addField("Index", "1")
-        val expected = messageFactory.createMessage(dictionaryURI, "SomeMessage")
+        val expected = DEFAULT_MESSAGE_FACTORY.createMessage("SomeMessage", transportConverter.namespace)
         expected.addField("Simple", "hello")
         expected.addField("SimpleList", listOf("1", "2"))
         expected.addField("ComplexField", actualInnerMessage)
@@ -142,9 +137,9 @@ internal class TransportToIMessageConverterWithoutDictionaryTest : AbstractTrans
             setOf("prop1", "prop2").containsAll(message.fieldNames)
         ) { "Unknown fields: $message" }
         val prop1 = message.getField<Any>("prop1")
-        Assertions.assertTrue(prop1 is IFilter) { "Unexpected type: " + prop1.javaClass }
+        Assertions.assertTrue(prop1 is IComparisonFilter) { "Unexpected type: " + prop1.javaClass }
         val prop2 = message.getField<Any>("prop2")
-        Assertions.assertTrue(prop2 is IFilter) { "Unexpected type: " + prop2.javaClass }
+        Assertions.assertTrue(prop2 is IComparisonFilter) { "Unexpected type: " + prop2.javaClass }
     }
 
     private fun inOperationFilter(): List<Arguments> {

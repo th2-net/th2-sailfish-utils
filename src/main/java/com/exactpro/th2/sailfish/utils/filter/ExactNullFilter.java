@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package com.exactpro.th2.sailfish.utils.filter;
 
 import com.exactpro.sf.aml.scriptutil.ExpressionResult;
-import com.exactpro.sf.aml.scriptutil.MvelException;
 import com.exactpro.th2.common.grpc.FilterOperation;
 import com.exactpro.th2.sailfish.utils.filter.util.FilterUtils;
 
@@ -53,7 +52,7 @@ public class ExactNullFilter implements IOperationFilter {
     }
 
     @Override
-    public Object getValue() throws MvelException {
+    public Object getValue() {
         throw new UnsupportedOperationException("getValue method is not implemented");
     }
 

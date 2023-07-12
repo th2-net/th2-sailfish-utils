@@ -21,11 +21,10 @@ import com.exactpro.sf.common.messages.structures.loaders.XmlDictionaryStructure
 import com.exactpro.sf.comparison.ComparatorSettings
 import com.exactpro.sf.comparison.ComparisonUtil
 import com.exactpro.sf.comparison.MessageComparator
-import com.exactpro.sf.configuration.suri.SailfishURI
 import com.exactpro.sf.scriptrunner.StatusType
 import com.exactpro.th2.common.schema.message.impl.rabbitmq.transport.ParsedMessage
 import com.exactpro.th2.sailfish.utils.MessageWrapper
-import com.exactpro.th2.sailfish.utils.factory.DefaultMessageFactoryProxy
+import com.exactpro.th2.sailfish.utils.transport.TransportToIMessageConverter.Companion.DEFAULT_MESSAGE_FACTORY
 import com.google.common.collect.ImmutableList
 import mu.KotlinLogging
 import org.junit.jupiter.api.Assertions
@@ -37,7 +36,6 @@ open class AbstractTransportToIMessageConverterTest {
     protected val dictionary: IDictionaryStructure = XmlDictionaryStructureLoader().load(
         Files.newInputStream(Path.of("src", "test", "resources", "dictionary.xml"))
     )
-    protected val dictionaryURI: SailfishURI = SailfishURI.unsafeParse(dictionary.namespace)
 
     protected fun assertPassed(expected: IMessage, actual: IMessage) {
         val comparisonResult = MessageComparator.compare(actual, expected, ComparatorSettings())
@@ -82,7 +80,7 @@ open class AbstractTransportToIMessageConverterTest {
     }
 
     protected fun createExpectedIMessage(): MessageWrapper {
-        val message = DefaultMessageFactoryProxy().createMessage(dictionaryURI, "RootWithNestedComplex")
+        val message = DEFAULT_MESSAGE_FACTORY.createMessage("RootWithNestedComplex", dictionary.namespace)
         message.addField("string", "StringValue")
         message.addField("byte", 0.toByte())
         message.addField("short", 1.toShort())
@@ -96,14 +94,14 @@ open class AbstractTransportToIMessageConverterTest {
         message.addField("boolY", true)
         message.addField("boolN", false)
         message.addField("enumInt", -1)
-        val nestedComplex = DefaultMessageFactoryProxy().createMessage(dictionaryURI, "SubMessage")
+        val nestedComplex = DEFAULT_MESSAGE_FACTORY.createMessage("SubMessage", dictionary.namespace)
         nestedComplex.addField("field1", "field1")
         nestedComplex.addField("field2", "field2")
-        val nestedComplexSecond = DefaultMessageFactoryProxy().createMessage(dictionaryURI, "SubMessage")
+        val nestedComplexSecond = DEFAULT_MESSAGE_FACTORY.createMessage("SubMessage", dictionary.namespace)
         nestedComplexSecond.addField("field1", "field3")
         nestedComplexSecond.addField("field2", "field4")
         message.addField("complex", nestedComplex)
-        val nestedComplexList = DefaultMessageFactoryProxy().createMessage(dictionaryURI, "SubComplexList")
+        val nestedComplexList = DEFAULT_MESSAGE_FACTORY.createMessage("SubComplexList", dictionary.namespace)
         nestedComplexList.addField("list", ImmutableList.of(nestedComplex, nestedComplexSecond))
         message.addField("complexList", nestedComplexList)
         return MessageWrapper(message)

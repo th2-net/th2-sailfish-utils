@@ -21,12 +21,22 @@ import com.exactpro.sf.common.messages.structures.loaders.XmlDictionaryStructure
 import com.exactpro.sf.comparison.ComparatorSettings;
 import com.exactpro.sf.comparison.ComparisonResult;
 import com.exactpro.sf.configuration.suri.SailfishURI;
-import com.exactpro.th2.common.grpc.*;
+import com.exactpro.th2.common.grpc.ListValue;
+import com.exactpro.th2.common.grpc.Message;
+import com.exactpro.th2.common.grpc.MessageMetadata;
+import com.exactpro.th2.common.grpc.NullValue;
+import com.exactpro.th2.common.grpc.Value;
 import com.exactpro.th2.sailfish.utils.MessageWrapper;
 import com.exactpro.th2.sailfish.utils.ProtoToIMessageConverter;
-import com.exactpro.th2.sailfish.utils.factory.DefaultMessageFactoryProxy;
 import com.google.common.collect.ImmutableList;
-import org.openjdk.jmh.annotations.*;
+import org.openjdk.jmh.annotations.Benchmark;
+import org.openjdk.jmh.annotations.BenchmarkMode;
+import org.openjdk.jmh.annotations.Fork;
+import org.openjdk.jmh.annotations.Mode;
+import org.openjdk.jmh.annotations.OutputTimeUnit;
+import org.openjdk.jmh.annotations.Scope;
+import org.openjdk.jmh.annotations.State;
+import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.infra.Blackhole;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
@@ -34,13 +44,16 @@ import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+
 import static com.exactpro.sf.comparison.MessageComparator.compare;
+import static com.exactpro.th2.sailfish.utils.ProtoToIMessageConverter.DEFAULT_MESSAGE_FACTORY;
 
 
 @State(Scope.Benchmark)
@@ -53,14 +66,21 @@ public class ProtoBenchmark {
     public static final Logger LOGGER = LoggerFactory.getLogger(ProtoBenchmark.class);
 
     @org.openjdk.jmh.annotations.State(Scope.Benchmark)
-    public static class StateMy{
+    public static class StateMy {
         public IDictionaryStructure dictionary;
-        { try { dictionary = new XmlDictionaryStructureLoader().
-                load(Files.newInputStream(Path.of("src", "test", "resources", "dictionary.xml")));
-        } catch (IOException e) { e.printStackTrace(); } }
+
+        {
+            try {
+                dictionary = new XmlDictionaryStructureLoader().
+                        load(Files.newInputStream(Path.of("src", "test", "resources", "dictionary.xml")));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
         public SailfishURI dictionaryURI = SailfishURI.unsafeParse(dictionary.getNamespace());
         public ProtoToIMessageConverter converter = new ProtoToIMessageConverter
-                (new DefaultMessageFactoryProxy(), dictionary, dictionaryURI);
+                (DEFAULT_MESSAGE_FACTORY, dictionary);
         public Message protoMessage = getMessage();
     }
 
@@ -80,7 +100,7 @@ public class ProtoBenchmark {
     }
 
     @Benchmark
-    public void testMethod(StateMy state, Blackhole bh){
+    public void testMethod(StateMy state, Blackhole bh) {
         //bh.consume(convertByDictionaryPositive(state));
         bh.consume(state.converter.fromProtoMessage(state.protoMessage, true));
     }
@@ -145,7 +165,6 @@ public class ProtoBenchmark {
     }
 
 
-
     private MessageWrapper convertByDictionaryPositive(StateMy state) {
         MessageWrapper actualIMessage = state.converter.fromProtoMessage(state.protoMessage, true);
         MessageWrapper expectedIMessage = createExpectedIMessage(state);
@@ -155,12 +174,12 @@ public class ProtoBenchmark {
     }
 
     private MessageWrapper createExpectedIMessage(StateMy state) {
-        IMessage message = new DefaultMessageFactoryProxy().createMessage(state.dictionaryURI, "RootWithNestedComplex");
+        IMessage message = DEFAULT_MESSAGE_FACTORY.createMessage("RootWithNestedComplex", state.dictionary.getNamespace());
         message.addField("string", "StringValue");
-        message.addField("byte", (byte)0);
-        message.addField("short", (short)1);
+        message.addField("byte", (byte) 0);
+        message.addField("short", (short) 1);
         message.addField("int", 2);
-        message.addField("long", (long)3);
+        message.addField("long", (long) 3);
         message.addField("float", 1.1f);
         message.addField("double", 2.2);
         message.addField("decimal", new BigDecimal("3.3"));
@@ -169,14 +188,14 @@ public class ProtoBenchmark {
         message.addField("boolY", true);
         message.addField("boolN", false);
         message.addField("enumInt", -1);
-        IMessage nestedComplex = new DefaultMessageFactoryProxy().createMessage(state.dictionaryURI, "SubMessage");
+        IMessage nestedComplex = DEFAULT_MESSAGE_FACTORY.createMessage("SubMessage", state.dictionary.getNamespace());
         nestedComplex.addField("field1", "field1");
         nestedComplex.addField("field2", "field2");
-        IMessage nestedComplexSecond = new DefaultMessageFactoryProxy().createMessage(state.dictionaryURI, "SubMessage");
+        IMessage nestedComplexSecond = DEFAULT_MESSAGE_FACTORY.createMessage("SubMessage", state.dictionary.getNamespace());
         nestedComplexSecond.addField("field1", "field3");
         nestedComplexSecond.addField("field2", "field4");
         message.addField("complex", nestedComplex);
-        IMessage nestedComplexList = new DefaultMessageFactoryProxy().createMessage(state.dictionaryURI, "SubComplexList");
+        IMessage nestedComplexList = DEFAULT_MESSAGE_FACTORY.createMessage("SubComplexList", state.dictionary.getNamespace());
         nestedComplexList.addField("list", ImmutableList.of(nestedComplex, nestedComplexSecond));
         message.addField("complexList", nestedComplexList);
         return new MessageWrapper(message);

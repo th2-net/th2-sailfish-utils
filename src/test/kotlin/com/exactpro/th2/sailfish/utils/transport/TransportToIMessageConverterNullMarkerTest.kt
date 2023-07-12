@@ -21,7 +21,6 @@ import com.exactpro.sf.common.messages.structures.loaders.XmlDictionaryStructure
 import com.exactpro.sf.comparison.ComparatorSettings
 import com.exactpro.sf.comparison.ComparisonUtil
 import com.exactpro.sf.comparison.MessageComparator
-import com.exactpro.sf.configuration.suri.SailfishURI
 import com.exactpro.sf.scriptrunner.StatusType
 import com.exactpro.th2.common.grpc.FilterOperation
 import com.exactpro.th2.common.grpc.ListValueFilter
@@ -36,9 +35,9 @@ import com.exactpro.th2.common.value.toValueFilter
 import com.exactpro.th2.sailfish.utils.MessageWrapper
 import com.exactpro.th2.sailfish.utils.ProtoToIMessageConverter
 import com.exactpro.th2.sailfish.utils.ToSailfishParameters
-import com.exactpro.th2.sailfish.utils.factory.DefaultMessageFactoryProxy
 import com.exactpro.th2.sailfish.utils.filter.util.FilterUtils
 import com.exactpro.th2.sailfish.utils.proto.AbstractProtoToIMessageConverterTest
+import com.exactpro.th2.sailfish.utils.transport.TransportToIMessageConverter.Companion.DEFAULT_MESSAGE_FACTORY
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
@@ -49,17 +48,13 @@ internal class TransportToIMessageConverterNullMarkerTest : AbstractProtoToIMess
     private var dictionaryStructure: IDictionaryStructure =
         TransportToIMessageConverterNullMarkerTest::class.java.classLoader.getResourceAsStream("dictionary.xml")
             .use { input -> XmlDictionaryStructureLoader().load(input) }
-    private val messageFactory = DefaultMessageFactoryProxy()
-    private val dictionaryURI = SailfishURI.unsafeParse("test")
 
     @ParameterizedTest(name = "useDictionary = {0}")
     @ValueSource(booleans = [true, false])
     fun convertsNullToMarker(useDictionary: Boolean) {
         val converter = TransportToIMessageConverter(
-            messageFactory,
-            dictionaryStructure,
-            dictionaryURI,
-            ToSailfishParameters(useMarkerForNullsInMessage = true)
+            dictionary = dictionaryStructure,
+            parameters = ToSailfishParameters(useMarkerForNullsInMessage = true)
         )
         val converted: MessageWrapper = converter.fromTransport(
             "test-book",
@@ -75,9 +70,9 @@ internal class TransportToIMessageConverterNullMarkerTest : AbstractProtoToIMess
             }.build(),
             useDictionary
         )
-        val expected = messageFactory.createMessage(dictionaryURI, "RootWithNestedComplex")
+        val expected = DEFAULT_MESSAGE_FACTORY.createMessage("RootWithNestedComplex", converter.namespace)
         expected.addField("nullField", FilterUtils.NULL_VALUE)
-        val inner = messageFactory.createMessage(dictionaryURI, "SubMessage")
+        val inner = DEFAULT_MESSAGE_FACTORY.createMessage("SubMessage", converter.namespace)
         inner.addField("field1", FilterUtils.NULL_VALUE)
         expected.addField("complex", inner)
         expected.addField("simpleCollection", listOf(FilterUtils.NULL_VALUE))
@@ -89,9 +84,7 @@ internal class TransportToIMessageConverterNullMarkerTest : AbstractProtoToIMess
     @EnumSource(value = FilterOperation::class, names = ["EQUAL", "NOT_EQUAL"], mode = EnumSource.Mode.INCLUDE)
     fun testExpectedNullValue(op: FilterOperation) {
         val converter = ProtoToIMessageConverter(
-            messageFactory,
             dictionaryStructure,
-            dictionaryURI,
             ProtoToIMessageConverter.createParameters().setUseMarkerForNullsInMessage(true)
         )
         val value: Supplier<Value> =

@@ -36,7 +36,7 @@ internal class IMessageToTransportConverterTest {
         val message = createMessage("Test")
         message.addField("emptyCol", emptyList<Any>())
         val converter = IMessageToTransportConverter()
-        val convertedMessage = converter.toTransport(message).build()
+        val convertedMessage = converter.toTransport(message)
         assertEquals(
             "Test",
             convertedMessage.type
@@ -56,7 +56,7 @@ internal class IMessageToTransportConverterTest {
         message.addField("bdCollection", listOf(BigDecimal("0.00000000")))
         val transportMessage =
             IMessageToTransportConverter(FromSailfishParameters(stripTrailingZeros = true))
-                .toTransport(message).build()
+                .toTransport(message)
         Assertions.assertAll(
             Executable {
                 val bd = transportMessage.body["bd"]
@@ -77,7 +77,7 @@ internal class IMessageToTransportConverterTest {
         message.addField("bd", BigDecimal("0.0000000"))
         message.addField("bdCollection", listOf(BigDecimal("0.00000000")))
         val protoMessage = IMessageToTransportConverter()
-            .toTransport(message).build()
+            .toTransport(message)
         Assertions.assertAll(
             Executable {
                 val bd = protoMessage.body["bd"]
@@ -99,7 +99,7 @@ internal class IMessageToTransportConverterTest {
         message.addField("time", timePart)
         message.addField("dateTime", LocalDateTime.of(LocalDate.EPOCH, timePart))
         val protoMessage = IMessageToTransportConverter()
-            .toTransport(message).build()
+            .toTransport(message)
         Assertions.assertAll(
             Executable {
                 val time = protoMessage.body["time"]
@@ -120,7 +120,7 @@ internal class IMessageToTransportConverterTest {
     companion object {
         @JvmStatic
         fun times(): List<Arguments> {
-            return java.util.List.of(
+            return listOf(
                 Arguments.arguments(LocalTime.of(0, 0), "00:00:00.000"),
                 Arguments.arguments(LocalTime.of(12, 0), "12:00:00.000"),
                 Arguments.arguments(LocalTime.of(12, 42), "12:42:00.000"),

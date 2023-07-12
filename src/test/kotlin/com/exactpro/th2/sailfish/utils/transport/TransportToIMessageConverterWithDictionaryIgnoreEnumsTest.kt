@@ -17,17 +17,14 @@ package com.exactpro.th2.sailfish.utils.transport
 
 import com.exactpro.th2.sailfish.utils.MessageWrapper
 import com.exactpro.th2.sailfish.utils.ToSailfishParameters
-import com.exactpro.th2.sailfish.utils.factory.DefaultMessageFactoryProxy
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.Test
 
 internal class TransportToIMessageConverterWithDictionaryIgnoreEnumsTest : AbstractTransportToIMessageConverterTest() {
     private val converter = TransportToIMessageConverter(
-        DefaultMessageFactoryProxy(),
-        dictionary,
-        dictionaryURI,
-        ToSailfishParameters(allowUnknownEnumValues = true)
+        dictionary = dictionary,
+        parameters = ToSailfishParameters(allowUnknownEnumValues = true)
     )
 
     @Test

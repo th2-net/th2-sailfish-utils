@@ -20,10 +20,8 @@ import com.exactpro.sf.common.messages.structures.IDictionaryStructure;
 import com.exactpro.sf.common.messages.structures.loaders.XmlDictionaryStructureLoader;
 import com.exactpro.sf.comparison.ComparatorSettings;
 import com.exactpro.sf.comparison.ComparisonResult;
-import com.exactpro.sf.configuration.suri.SailfishURI;
 import com.exactpro.th2.common.schema.message.impl.rabbitmq.transport.ParsedMessage;
 import com.exactpro.th2.sailfish.utils.MessageWrapper;
-import com.exactpro.th2.sailfish.utils.factory.DefaultMessageFactoryProxy;
 import com.exactpro.th2.sailfish.utils.transport.TransportToIMessageConverter;
 import com.google.common.collect.ImmutableList;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -51,6 +49,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static com.exactpro.sf.comparison.MessageComparator.compare;
+import static com.exactpro.th2.sailfish.utils.transport.TransportToIMessageConverter.getDEFAULT_MESSAGE_FACTORY;
 
 
 @State(Scope.Benchmark)
@@ -75,8 +74,7 @@ public class TransportBenchmark {
             }
         }
 
-        public SailfishURI dictionaryURI = SailfishURI.unsafeParse(dictionary.getNamespace());
-        public TransportToIMessageConverter converter = new TransportToIMessageConverter(new DefaultMessageFactoryProxy(), dictionary, dictionaryURI);
+        public TransportToIMessageConverter converter = new TransportToIMessageConverter(getDEFAULT_MESSAGE_FACTORY(), dictionary);
         public ParsedMessage protoMessage = getMessage();
     }
 
@@ -140,9 +138,9 @@ public class TransportBenchmark {
     }
 
     public static ParsedMessage createMessageBuilder(String messageType) {
-        ParsedMessage parsedMessage = ParsedMessage.newMutable();
+        ParsedMessage.FromMapBuilder parsedMessage = ParsedMessage.builder();
         parsedMessage.setType(messageType);
-        return parsedMessage;
+        return parsedMessage.build();
     }
 
     private MessageWrapper convertByDictionaryPositive(StateMy state) {
@@ -154,7 +152,7 @@ public class TransportBenchmark {
     }
 
     private MessageWrapper createExpectedIMessage(StateMy state) {
-        IMessage message = new DefaultMessageFactoryProxy().createMessage(state.dictionaryURI, "RootWithNestedComplex");
+        IMessage message = getDEFAULT_MESSAGE_FACTORY().createMessage("RootWithNestedComplex", state.dictionary.getNamespace());
         message.addField("string", "StringValue");
         message.addField("byte", (byte) 0);
         message.addField("short", (short) 1);
@@ -168,14 +166,14 @@ public class TransportBenchmark {
         message.addField("boolY", true);
         message.addField("boolN", false);
         message.addField("enumInt", -1);
-        IMessage nestedComplex = new DefaultMessageFactoryProxy().createMessage(state.dictionaryURI, "SubMessage");
+        IMessage nestedComplex = getDEFAULT_MESSAGE_FACTORY().createMessage("SubMessage", state.dictionary.getNamespace());
         nestedComplex.addField("field1", "field1");
         nestedComplex.addField("field2", "field2");
-        IMessage nestedComplexSecond = new DefaultMessageFactoryProxy().createMessage(state.dictionaryURI, "SubMessage");
+        IMessage nestedComplexSecond = getDEFAULT_MESSAGE_FACTORY().createMessage("SubMessage", state.dictionary.getNamespace());
         nestedComplexSecond.addField("field1", "field3");
         nestedComplexSecond.addField("field2", "field4");
         message.addField("complex", nestedComplex);
-        IMessage nestedComplexList = new DefaultMessageFactoryProxy().createMessage(state.dictionaryURI, "SubComplexList");
+        IMessage nestedComplexList = getDEFAULT_MESSAGE_FACTORY().createMessage("SubComplexList", state.dictionary.getNamespace());
         nestedComplexList.addField("list", ImmutableList.of(nestedComplex, nestedComplexSecond));
         message.addField("complexList", nestedComplexList);
         return new MessageWrapper(message);

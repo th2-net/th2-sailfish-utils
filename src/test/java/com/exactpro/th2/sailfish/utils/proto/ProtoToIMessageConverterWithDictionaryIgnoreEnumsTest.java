@@ -18,14 +18,12 @@ package com.exactpro.th2.sailfish.utils.proto;
 
 import com.exactpro.sf.common.messages.structures.IDictionaryStructure;
 import com.exactpro.sf.common.messages.structures.loaders.XmlDictionaryStructureLoader;
-import com.exactpro.sf.configuration.suri.SailfishURI;
 import com.exactpro.th2.common.grpc.ListValue;
 import com.exactpro.th2.common.grpc.Message;
 import com.exactpro.th2.common.grpc.Message.Builder;
 import com.exactpro.th2.common.grpc.NullValue;
 import com.exactpro.th2.common.grpc.Value;
 import com.exactpro.th2.sailfish.utils.ProtoToIMessageConverter;
-import com.exactpro.th2.sailfish.utils.factory.DefaultMessageFactoryProxy;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -34,6 +32,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 
+import static com.exactpro.th2.sailfish.utils.ProtoToIMessageConverter.DEFAULT_MESSAGE_FACTORY;
 import static com.exactpro.th2.sailfish.utils.ProtoToIMessageConverter.createParameters;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -46,9 +45,8 @@ class ProtoToIMessageConverterWithDictionaryIgnoreEnumsTest extends AbstractProt
         try {
             IDictionaryStructure dictionary = new XmlDictionaryStructureLoader().load(
                     Files.newInputStream(Path.of("src", "test", "resources", "dictionary.xml")));
-            SailfishURI dictionaryURI = SailfishURI.unsafeParse(dictionary.getNamespace());
             converter = new ProtoToIMessageConverter(
-                    new DefaultMessageFactoryProxy(), dictionary, dictionaryURI,
+                    DEFAULT_MESSAGE_FACTORY, dictionary,
                     createParameters().setAllowUnknownEnumValues(true));
         } catch (IOException e) {
             throw new RuntimeException("could not create converter", e);
@@ -87,7 +85,7 @@ class ProtoToIMessageConverterWithDictionaryIgnoreEnumsTest extends AbstractProt
                 .putFields("nullField", Value.newBuilder().setNullValue(NullValue.NULL_VALUE).build())
                 .putFields("complexList", Value.newBuilder().setMessageValue(
                         Message.newBuilder().putFields("list", getComplexList())
-                    ).build());
+                ).build());
     }
 
     private Value getComplexList() {

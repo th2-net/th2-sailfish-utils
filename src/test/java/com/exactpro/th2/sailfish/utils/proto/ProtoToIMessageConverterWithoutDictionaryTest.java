@@ -16,27 +16,11 @@
 
 package com.exactpro.th2.sailfish.utils.proto;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.util.List;
-import java.util.Set;
-
-import com.exactpro.th2.sailfish.utils.MessageWrapper;
-import com.exactpro.th2.sailfish.utils.ProtoToIMessageConverter;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
-
-import com.exactpro.sf.aml.scriptutil.StaticUtil.IFilter;
 import com.exactpro.sf.common.messages.IMessage;
 import com.exactpro.sf.comparison.ComparatorSettings;
 import com.exactpro.sf.comparison.ComparisonResult;
+import com.exactpro.sf.comparison.IComparisonFilter;
 import com.exactpro.sf.comparison.MessageComparator;
-import com.exactpro.sf.configuration.suri.SailfishURI;
 import com.exactpro.sf.scriptrunner.StatusType;
 import com.exactpro.th2.common.grpc.FilterOperation;
 import com.exactpro.th2.common.grpc.Message;
@@ -45,14 +29,26 @@ import com.exactpro.th2.common.grpc.MetadataFilter;
 import com.exactpro.th2.common.grpc.MetadataFilter.SimpleFilter;
 import com.exactpro.th2.common.grpc.SimpleList;
 import com.exactpro.th2.common.grpc.Value;
-import com.exactpro.th2.sailfish.utils.factory.DefaultMessageFactoryProxy;
+import com.exactpro.th2.sailfish.utils.MessageWrapper;
+import com.exactpro.th2.sailfish.utils.ProtoToIMessageConverter;
 import com.exactpro.th2.sailfish.utils.filter.IOperationFilter;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
+
+import java.util.List;
+import java.util.Set;
+
+import static com.exactpro.th2.sailfish.utils.ProtoToIMessageConverter.DEFAULT_MESSAGE_FACTORY;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ProtoToIMessageConverterWithoutDictionaryTest extends AbstractProtoToIMessageConverterTest {
-    private final DefaultMessageFactoryProxy messageFactory = new DefaultMessageFactoryProxy();
-    private final SailfishURI dictionaryURI = SailfishURI.unsafeParse("test");
     private final ProtoToIMessageConverter converter = new ProtoToIMessageConverter(
-            messageFactory, null, dictionaryURI
+            DEFAULT_MESSAGE_FACTORY, null
     );
 
     @Test
@@ -79,7 +75,7 @@ class ProtoToIMessageConverterWithoutDictionaryTest extends AbstractProtoToIMess
                         Value.newBuilder().setMessageValue(innerMessage.putFields("Index", getSimpleValue("1")).build()).build()
                 )).build();
 
-        IMessage simple = messageFactory.createMessage(dictionaryURI, "Simple");
+        IMessage simple = DEFAULT_MESSAGE_FACTORY.createMessage("Simple", converter.getNamespace());
         simple.addField("Field", "A");
         simple.addField("NullField", null);
         IMessage simple0 = simple.cloneMessage();
@@ -87,7 +83,7 @@ class ProtoToIMessageConverterWithoutDictionaryTest extends AbstractProtoToIMess
         IMessage simple1 = simple.cloneMessage();
         simple1.addField("Index", "1");
 
-        IMessage actualInnerMessage = messageFactory.createMessage(dictionaryURI, "InnerMessage");
+        IMessage actualInnerMessage = DEFAULT_MESSAGE_FACTORY.createMessage("InnerMessage", converter.getNamespace());
         actualInnerMessage.addField("Simple", "hello");
         actualInnerMessage.addField("SimpleList", List.of("1", "2"));
         actualInnerMessage.addField("ComplexField", simple);
@@ -99,7 +95,7 @@ class ProtoToIMessageConverterWithoutDictionaryTest extends AbstractProtoToIMess
         IMessage actualInner1 = actualInnerMessage.cloneMessage();
         actualInner1.addField("Index", "1");
 
-        IMessage expected = messageFactory.createMessage(dictionaryURI, "SomeMessage");
+        IMessage expected = DEFAULT_MESSAGE_FACTORY.createMessage("SomeMessage", converter.getNamespace());
         expected.addField("Simple", "hello");
         expected.addField("SimpleList", List.of("1", "2"));
         expected.addField("ComplexField", actualInnerMessage);
@@ -138,9 +134,9 @@ class ProtoToIMessageConverterWithoutDictionaryTest extends AbstractProtoToIMess
         assertEquals(2, message.getFieldCount());
         assertTrue(Set.of("prop1", "prop2").containsAll(message.getFieldNames()), () -> "Unknown fields: " + message);
         Object prop1 = message.getField("prop1");
-        assertTrue(prop1 instanceof IFilter, () -> "Unexpected type: " + prop1.getClass());
+        assertTrue(prop1 instanceof IComparisonFilter, () -> "Unexpected type: " + prop1.getClass());
         Object prop2 = message.getField("prop2");
-        assertTrue(prop2 instanceof IFilter, () -> "Unexpected type: " + prop2.getClass());
+        assertTrue(prop2 instanceof IComparisonFilter, () -> "Unexpected type: " + prop2.getClass());
     }
 
     private static List<Arguments> inOperationFilter() {

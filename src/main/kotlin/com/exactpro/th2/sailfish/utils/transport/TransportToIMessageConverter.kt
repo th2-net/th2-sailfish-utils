@@ -15,8 +15,10 @@
  */
 package com.exactpro.th2.sailfish.utils.transport
 
+import com.exactpro.sf.common.impl.messages.DefaultMessageFactory
 import com.exactpro.sf.common.impl.messages.xml.configuration.JavaType
 import com.exactpro.sf.common.messages.IMessage
+import com.exactpro.sf.common.messages.IMessageFactory
 import com.exactpro.sf.common.messages.messageProperties
 import com.exactpro.sf.common.messages.structures.IDictionaryStructure
 import com.exactpro.sf.common.messages.structures.IFieldStructure
@@ -36,8 +38,6 @@ import com.exactpro.sf.comparison.conversion.impl.LocalTimeConverter
 import com.exactpro.sf.comparison.conversion.impl.LongConverter
 import com.exactpro.sf.comparison.conversion.impl.ShortConverter
 import com.exactpro.sf.comparison.conversion.impl.StringConverter
-import com.exactpro.sf.configuration.suri.SailfishURI
-import com.exactpro.sf.externalapi.IMessageFactoryProxy
 import com.exactpro.th2.common.schema.message.impl.rabbitmq.transport.ParsedMessage
 import com.exactpro.th2.common.utils.message.transport.toProto
 import com.exactpro.th2.sailfish.utils.MessageConvertException
@@ -48,15 +48,16 @@ import com.exactpro.th2.sailfish.utils.filter.util.FilterUtils.NULL_VALUE
 import com.exactpro.th2.sailfish.utils.filter.util.FilterUtils.NullValue
 import mu.KotlinLogging
 import org.apache.commons.lang3.BooleanUtils
-import java.util.*
+import java.util.EnumMap
 import java.util.function.BiFunction
 
 class TransportToIMessageConverter @JvmOverloads constructor(
-    private val messageFactory: IMessageFactoryProxy,
+    private val messageFactory: IMessageFactory = DefaultMessageFactory.getFactory(),
     private val dictionary: IDictionaryStructure? = null,
-    private val dictionaryURI: SailfishURI? = null,
     private val parameters: ToSailfishParameters = ToSailfishParameters.DEFAULT,
 ) {
+    val namespace = dictionary?.namespace ?: UNKNOWN_NAMESPACE
+
     fun fromTransport(
         book: String,
         sessionGroup: String,
@@ -103,8 +104,8 @@ class TransportToIMessageConverter @JvmOverloads constructor(
 
     private fun Map<*, *>.convertByDictionary(parentStructure: IFieldStructure, isRoot: Boolean): IMessage =
         messageFactory.createMessage(
-            dictionaryURI,
-            if (isRoot) parentStructure.name else parentStructure.referenceName ?: parentStructure.name
+            if (isRoot) parentStructure.name else parentStructure.referenceName ?: parentStructure.name,
+            namespace
         ).apply {
             forEach { (fieldName, fieldValue) ->
                 require(fieldName is String) {
@@ -126,7 +127,7 @@ class TransportToIMessageConverter @JvmOverloads constructor(
         }
 
     private fun Map<*, *>.convertWithoutDictionary(messageType: String): IMessage =
-        messageFactory.createMessage(dictionaryURI, messageType).apply {
+        messageFactory.createMessage(messageType, namespace).apply {
             forEach { (fieldName, fieldValue) ->
                 require(fieldName is String) {
                     "Field name should be string type instead of ${if (fieldName != null) fieldName::class.java else "null"} type, message type = $messageType"
@@ -253,8 +254,13 @@ class TransportToIMessageConverter @JvmOverloads constructor(
     }
 
     companion object {
+        private const val UNKNOWN_NAMESPACE = "unknown"
         private val K_LOGGER = KotlinLogging.logger {}
         private val CONVERTERS = initConverters()
+
+        @JvmStatic
+        val DEFAULT_MESSAGE_FACTORY: IMessageFactory = DefaultMessageFactory.getFactory()
+
         private fun initConverters(): Map<JavaType, IConverter<*>> {
             val target: MutableMap<JavaType, IConverter<*>> = EnumMap(JavaType::class.java)
             target[JavaType.JAVA_LANG_BOOLEAN] = BooleanConverter()

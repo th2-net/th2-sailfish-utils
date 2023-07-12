@@ -16,32 +16,10 @@
 
 package com.exactpro.th2.sailfish.utils.proto;
 
-import static java.util.Map.entry;
-import static java.util.Objects.requireNonNull;
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Collection;
-import java.util.Map;
-
-import com.exactpro.th2.sailfish.utils.MessageConvertException;
-import com.exactpro.th2.sailfish.utils.MessageWrapper;
-import com.exactpro.th2.sailfish.utils.ProtoToIMessageConverter;
-import com.exactpro.th2.sailfish.utils.factory.DefaultMessageFactoryProxy;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-
 import com.exactpro.sf.common.messages.IMessage;
 import com.exactpro.sf.common.messages.MetadataExtensions;
 import com.exactpro.sf.common.messages.structures.IDictionaryStructure;
 import com.exactpro.sf.common.messages.structures.loaders.XmlDictionaryStructureLoader;
-import com.exactpro.sf.configuration.suri.SailfishURI;
 import com.exactpro.th2.common.grpc.FilterOperation;
 import com.exactpro.th2.common.grpc.ListValue;
 import com.exactpro.th2.common.grpc.Message;
@@ -50,10 +28,29 @@ import com.exactpro.th2.common.grpc.MessageFilter;
 import com.exactpro.th2.common.grpc.NullValue;
 import com.exactpro.th2.common.grpc.Value;
 import com.exactpro.th2.common.grpc.ValueFilter;
+import com.exactpro.th2.sailfish.utils.MessageConvertException;
+import com.exactpro.th2.sailfish.utils.MessageWrapper;
+import com.exactpro.th2.sailfish.utils.ProtoToIMessageConverter;
 import com.google.common.collect.ImmutableList;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Collection;
+import java.util.Map;
+
+import static com.exactpro.th2.sailfish.utils.ProtoToIMessageConverter.DEFAULT_MESSAGE_FACTORY;
+import static java.util.Map.entry;
+import static java.util.Objects.requireNonNull;
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ProtoToIMessageConverterWithDictionaryTest extends AbstractProtoToIMessageConverterTest {
-    private static SailfishURI dictionaryURI;
     private static ProtoToIMessageConverter converter;
 
     @BeforeAll
@@ -61,9 +58,8 @@ class ProtoToIMessageConverterWithDictionaryTest extends AbstractProtoToIMessage
         try {
             IDictionaryStructure dictionary = new XmlDictionaryStructureLoader().load(
                     Files.newInputStream(Path.of("src", "test", "resources", "dictionary.xml")));
-            dictionaryURI = SailfishURI.unsafeParse(dictionary.getNamespace());
             converter = new ProtoToIMessageConverter(
-                    new DefaultMessageFactoryProxy(), dictionary, dictionaryURI);
+                    DEFAULT_MESSAGE_FACTORY, dictionary);
         } catch (IOException e) {
             throw new RuntimeException("could not create converter", e);
         }
@@ -168,8 +164,8 @@ class ProtoToIMessageConverterWithDictionaryTest extends AbstractProtoToIMessage
                 MessageConvertException.class,
                 () -> {
                     Value listValue = Value.newBuilder().setListValue(ListValue.newBuilder()
-                                .addValues(getComplex("SubMessage", Map.of("field1", "field1")))
-                                .addValues(getComplex("SubMessage", Map.of("Fake", "fake"))))
+                                    .addValues(getComplex("SubMessage", Map.of("field1", "field1")))
+                                    .addValues(getComplex("SubMessage", Map.of("Fake", "fake"))))
                             .build();
                     Message message = createMessageBuilder("RootWithNestedComplex")
                             .putFields("msgCollection", listValue)
@@ -186,8 +182,8 @@ class ProtoToIMessageConverterWithDictionaryTest extends AbstractProtoToIMessage
                 MessageConvertException.class,
                 () -> {
                     Value listValue = Value.newBuilder().setListValue(ListValue.newBuilder()
-                                .addValues(getSimpleValue("1"))
-                                .addValues(getSimpleValue("abc")))
+                                    .addValues(getSimpleValue("1"))
+                                    .addValues(getSimpleValue("abc")))
                             .build();
                     Message message = createMessageBuilder("RootWithNestedComplex")
                             .putFields("simpleCollection", listValue)
@@ -268,13 +264,13 @@ class ProtoToIMessageConverterWithDictionaryTest extends AbstractProtoToIMessage
         for (String fieldName : message.getFieldNames()) {
             Object field = message.getField(fieldName);
             if (field instanceof IMessage) {
-                IMessage msg = (IMessage)field;
+                IMessage msg = (IMessage) field;
                 assertMessageName(fieldNameToMessageName, fieldName, msg);
                 assertComplexFieldsHasCorrectNames(msg, fieldNameToMessageName);
                 continue;
             }
             if (field instanceof Collection<?>) {
-                var collection = (Collection<?>)field;
+                var collection = (Collection<?>) field;
                 if (collection.isEmpty()) {
                     continue;
                 }
@@ -283,7 +279,7 @@ class ProtoToIMessageConverterWithDictionaryTest extends AbstractProtoToIMessage
                     continue;
                 }
                 for (Object obj : collection) {
-                    IMessage msg = (IMessage)obj;
+                    IMessage msg = (IMessage) obj;
                     assertMessageName(fieldNameToMessageName, fieldName, msg);
                     assertComplexFieldsHasCorrectNames(msg, fieldNameToMessageName);
                 }
@@ -292,12 +288,12 @@ class ProtoToIMessageConverterWithDictionaryTest extends AbstractProtoToIMessage
     }
 
     private MessageWrapper createExpectedIMessage() {
-        IMessage message = new DefaultMessageFactoryProxy().createMessage(dictionaryURI, "RootWithNestedComplex");
+        IMessage message = DEFAULT_MESSAGE_FACTORY.createMessage("RootWithNestedComplex", converter.getNamespace());
         message.addField("string", "StringValue");
-        message.addField("byte", (byte)0);
-        message.addField("short", (short)1);
+        message.addField("byte", (byte) 0);
+        message.addField("short", (short) 1);
         message.addField("int", 2);
-        message.addField("long", (long)3);
+        message.addField("long", (long) 3);
         message.addField("float", 1.1f);
         message.addField("double", 2.2);
         message.addField("decimal", new BigDecimal("3.3"));
@@ -306,14 +302,14 @@ class ProtoToIMessageConverterWithDictionaryTest extends AbstractProtoToIMessage
         message.addField("boolY", true);
         message.addField("boolN", false);
         message.addField("enumInt", -1);
-        IMessage nestedComplex = new DefaultMessageFactoryProxy().createMessage(dictionaryURI, "SubMessage");
+        IMessage nestedComplex = DEFAULT_MESSAGE_FACTORY.createMessage("SubMessage", converter.getNamespace());
         nestedComplex.addField("field1", "field1");
         nestedComplex.addField("field2", "field2");
-        IMessage nestedComplexSecond = new DefaultMessageFactoryProxy().createMessage(dictionaryURI, "SubMessage");
+        IMessage nestedComplexSecond = DEFAULT_MESSAGE_FACTORY.createMessage("SubMessage", converter.getNamespace());
         nestedComplexSecond.addField("field1", "field3");
         nestedComplexSecond.addField("field2", "field4");
         message.addField("complex", nestedComplex);
-        IMessage nestedComplexList = new DefaultMessageFactoryProxy().createMessage(dictionaryURI, "SubComplexList");
+        IMessage nestedComplexList = DEFAULT_MESSAGE_FACTORY.createMessage("SubComplexList", converter.getNamespace());
         nestedComplexList.addField("list", ImmutableList.of(nestedComplex, nestedComplexSecond));
         message.addField("complexList", nestedComplexList);
         return new MessageWrapper(message);
@@ -341,7 +337,7 @@ class ProtoToIMessageConverterWithDictionaryTest extends AbstractProtoToIMessage
                 .putFields("nullField", Value.newBuilder().setNullValue(NullValue.NULL_VALUE).build())
                 .putFields("complexList", Value.newBuilder().setMessageValue(
                         Message.newBuilder().putFields("list", getComplexList())
-                    ).build());
+                ).build());
     }
 
     private Value getComplexList() {

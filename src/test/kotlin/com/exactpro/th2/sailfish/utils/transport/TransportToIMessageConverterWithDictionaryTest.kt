@@ -19,16 +19,15 @@ import com.exactpro.sf.common.messages.IMessage
 import com.exactpro.sf.common.messages.messageProperties
 import com.exactpro.th2.common.schema.message.impl.rabbitmq.transport.ParsedMessage
 import com.exactpro.th2.sailfish.utils.MessageConvertException
-import com.exactpro.th2.sailfish.utils.factory.DefaultMessageFactoryProxy
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.function.Executable
-import java.util.*
+import java.util.Objects
 
 internal class TransportToIMessageConverterWithDictionaryTest : AbstractTransportToIMessageConverterTest() {
 
     private val converter = TransportToIMessageConverter(
-        DefaultMessageFactoryProxy(), dictionary, dictionaryURI
+        dictionary = dictionary
     )
 
     @Test
