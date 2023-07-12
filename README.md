@@ -9,14 +9,14 @@ th2 projects to reuse Sailfish features: message comparison, codec/connect imple
 
 Implemented converters for th2 transport protocol
 
-Sailfish version is updated from `3.3.54` to `3.3.93`
+Use `sailfish-common:3.3.111` instead of `sailfish-core:3.3.54`
 
 + Support message structure inheritance
 + Added dependency
     + common-utils `2.1.0`
 + Versions for dependencies were updated:
-    + BOM `4.1.0` -> `4.2.0`
-    + common `3.44.0` -> `5.2.0`
+    + BOM `4.1.0` -> `4.4.0`
+    + common `3.44.0` -> `5.3.0`
 
 ### 3.14.0
 
