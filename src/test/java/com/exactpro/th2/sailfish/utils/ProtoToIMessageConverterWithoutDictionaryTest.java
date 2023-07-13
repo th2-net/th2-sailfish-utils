@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.exactpro.th2.sailfish.utils.proto;
+package com.exactpro.th2.sailfish.utils;
 
 import com.exactpro.sf.common.messages.IMessage;
 import com.exactpro.sf.comparison.ComparatorSettings;
@@ -29,9 +29,8 @@ import com.exactpro.th2.common.grpc.MetadataFilter;
 import com.exactpro.th2.common.grpc.MetadataFilter.SimpleFilter;
 import com.exactpro.th2.common.grpc.SimpleList;
 import com.exactpro.th2.common.grpc.Value;
-import com.exactpro.th2.sailfish.utils.MessageWrapper;
-import com.exactpro.th2.sailfish.utils.ProtoToIMessageConverter;
 import com.exactpro.th2.sailfish.utils.filter.IOperationFilter;
+import com.exactpro.th2.sailfish.utils.proto.AbstractProtoToIMessageConverterTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;

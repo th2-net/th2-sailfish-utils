@@ -56,7 +56,7 @@ class TransportToIMessageConverter @JvmOverloads constructor(
     private val dictionary: IDictionaryStructure? = null,
     private val parameters: ToSailfishParameters = ToSailfishParameters.DEFAULT,
 ) {
-    val namespace = dictionary?.namespace ?: UNKNOWN_NAMESPACE
+    internal val namespace = dictionary?.namespace ?: UNKNOWN_NAMESPACE
 
     fun fromTransport(
         book: String,

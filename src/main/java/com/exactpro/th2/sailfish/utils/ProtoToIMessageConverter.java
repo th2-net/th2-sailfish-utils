@@ -231,7 +231,7 @@ public class ProtoToIMessageConverter {
         return fromMetadataFilter(filter, FilterSettings.DEFAULT_FILTER, messageName);
     }
 
-    public String getNamespace() {
+    protected String getNamespace() {
         return namespace;
     }
 
