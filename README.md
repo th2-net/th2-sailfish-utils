@@ -13,10 +13,16 @@ Use `sailfish-common:3.3.111` instead of `sailfish-core:3.3.54`
 
 + Support message structure inheritance
 + Added dependency
-    + common-utils `2.1.0`
+    + common-utils `2.1.0-dev`
 + Versions for dependencies were updated:
     + BOM `4.1.0` -> `4.4.0`
-    + common `3.44.0` -> `5.3.0`
+    + common `3.44.0` -> `5.3.1-dev`
+
+#### Gradle plugins:
++ Updated org.owasp.dependencycheck: `8.3.1`
++ Added com.gorylenko.gradle-git-properties `2.4.1`
++ Added com.github.jk1.dependency-license-report `2.5`
++ Added de.undercouch.download `5.4.0`
 
 ### 3.14.0
 
