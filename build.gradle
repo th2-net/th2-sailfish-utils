@@ -58,19 +58,19 @@ targetCompatibility = 11
 
 dependencies {
     api platform('com.exactpro.th2:bom:4.4.0')
-    api('com.exactpro.th2:common:5.3.1-dev') {
+    api('com.exactpro.th2:common:5.3.2-dev') {
         exclude group: 'com.exactpro.th2', module: 'cradle-core'
         exclude group: 'com.exactpro.th2', module: 'cradle-cassandra'
     }
     api "com.exactpro.sf:sailfish-common:${sailfishVersion}"
 
-    implementation 'com.exactpro.th2:common-utils:2.1.0-dev'
+    implementation 'com.exactpro.th2:common-utils:2.1.1-dev'
 
     implementation "org.slf4j:slf4j-api"
     implementation "com.google.protobuf:protobuf-java-util"
 
     // Use JUnit Jupiter API for testing.
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.9.3'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.0'
     testImplementation "org.jetbrains.kotlin:kotlin-test-junit:${kotlin_version}"
 
     jmh 'org.openjdk.jmh:jmh-core:1.36'
@@ -80,7 +80,7 @@ dependencies {
     testAnnotationProcessor 'org.openjdk.jmh:jmh-generator-annprocess:1.35'
 }
 
-tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile) {
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
     kotlinOptions {
         jvmTarget = "11"
     }
