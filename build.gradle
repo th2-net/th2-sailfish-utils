@@ -57,14 +57,14 @@ sourceCompatibility = 11
 targetCompatibility = 11
 
 dependencies {
-    api platform('com.exactpro.th2:bom:4.5.0-TH2-5035-+')
-    api('com.exactpro.th2:common:5.4.0-TH2-5035-+') {
+    api platform('com.exactpro.th2:bom:4.5.0')
+    api('com.exactpro.th2:common:5.4.0-dev') {
         exclude group: 'com.exactpro.th2', module: 'cradle-core'
         exclude group: 'com.exactpro.th2', module: 'cradle-cassandra'
     }
     api "com.exactpro.sf:sailfish-common:${sailfishVersion}"
 
-    implementation 'com.exactpro.th2:common-utils:2.2.0-TH2-5035-+'
+    implementation 'com.exactpro.th2:common-utils:2.2.0-dev'
 
     implementation "org.slf4j:slf4j-api"
     implementation "com.google.protobuf:protobuf-java-util"
