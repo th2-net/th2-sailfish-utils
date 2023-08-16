@@ -57,14 +57,18 @@ sourceCompatibility = 11
 targetCompatibility = 11
 
 dependencies {
-    api platform('com.exactpro.th2:bom:4.4.0')
-    api('com.exactpro.th2:common:5.3.2-dev') {
+    api platform('com.exactpro.th2:bom:4.5.0')
+    api('com.exactpro.th2:common:5.4.0-dev') {
         exclude group: 'com.exactpro.th2', module: 'cradle-core'
         exclude group: 'com.exactpro.th2', module: 'cradle-cassandra'
     }
     api "com.exactpro.sf:sailfish-common:${sailfishVersion}"
 
-    implementation 'com.exactpro.th2:common-utils:2.1.1-dev'
+    implementation('com.squareup.okio:okio:3.5.0') {
+        because('fix vulnerability in transitive dependency <com.squareup.okhttp3:okhttp>')
+    }
+
+    implementation 'com.exactpro.th2:common-utils:2.2.0-dev'
 
     implementation "org.slf4j:slf4j-api"
     implementation "com.google.protobuf:protobuf-java-util"
