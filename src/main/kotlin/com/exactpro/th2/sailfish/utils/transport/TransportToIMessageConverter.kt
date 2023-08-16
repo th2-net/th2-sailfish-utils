@@ -258,7 +258,7 @@ class TransportToIMessageConverter @JvmOverloads constructor(
         private val K_LOGGER = KotlinLogging.logger {}
         private val CONVERTERS = initConverters()
 
-        @JvmStatic
+        @JvmField
         val DEFAULT_MESSAGE_FACTORY: IMessageFactory = DefaultMessageFactory.getFactory()
 
         private fun initConverters(): Map<JavaType, IConverter<*>> {
