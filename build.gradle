@@ -19,7 +19,20 @@ ext {
     sailfishVersion = '3.3.111'
 }
 
+ext.excludeSailfish = { rcd ->
+    rcd.excludeModule("com.exactpro.sf", "sailfish-core")
+    rcd.excludeModule("com.exactpro.sf", "sailfish-common")
+    rcd.excludeModule("com.exactpro.sf", "sailfish-rest-api-client")
+}
+
 repositories {
+    maven {
+        name 'Sonatype_snapshots'
+        url 'https://s01.oss.sonatype.org/content/repositories/snapshots/'
+        content {
+            excludeSailfish(it)
+        }
+    }
     maven {
         name 'Sonatype_snapshots'
         url 'https://s01.oss.sonatype.org/content/repositories/snapshots/'
@@ -27,6 +40,13 @@ repositories {
             mavenPom()
             artifact()
             ignoreGradleMetadataRedirection()
+        }
+    }
+    maven {
+        name 'Sonatype_releases'
+        url 'https://s01.oss.sonatype.org/content/repositories/releases/'
+        content {
+            excludeSailfish(it)
         }
     }
     maven {
@@ -63,10 +83,6 @@ dependencies {
         exclude group: 'com.exactpro.th2', module: 'cradle-cassandra'
     }
     api "com.exactpro.sf:sailfish-common:${sailfishVersion}"
-
-    implementation('com.squareup.okio:okio:3.5.0') {
-        because('fix vulnerability in transitive dependency <com.squareup.okhttp3:okhttp>')
-    }
 
     implementation 'com.exactpro.th2:common-utils:2.2.0-dev'
 
