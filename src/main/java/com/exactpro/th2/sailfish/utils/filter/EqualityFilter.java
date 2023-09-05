@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Exactpro (Exactpro Systems Limited)
+ * Copyright 2021-2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package com.exactpro.th2.sailfish.utils.filter;
 
 import com.exactpro.sf.aml.scriptutil.ExpressionResult;
-import com.exactpro.sf.aml.scriptutil.MvelException;
 import com.exactpro.sf.common.messages.IMessage;
 import com.exactpro.th2.common.grpc.FilterOperation;
 import org.jetbrains.annotations.NotNull;
@@ -62,7 +61,7 @@ public class EqualityFilter extends AbstractNotNullFilter {
     }
 
     @Override
-    public Object getValue() throws MvelException {
+    public Object getValue() {
         return expectedValue;
     }
 
@@ -70,7 +69,7 @@ public class EqualityFilter extends AbstractNotNullFilter {
     public boolean hasValue() {
         return true;
     }
-    
+
     private void validateActualValue(Object actualValue) {
         if (actualValue instanceof Collection<?> || actualValue instanceof IMessage) {
             throw new IllegalArgumentException(String.format(

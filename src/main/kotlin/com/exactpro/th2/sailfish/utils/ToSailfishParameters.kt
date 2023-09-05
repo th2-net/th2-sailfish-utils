@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2023 Exactpro (Exactpro Systems Limited)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.exactpro.th2.sailfish.utils.filter;
+package com.exactpro.th2.sailfish.utils
 
-import com.exactpro.sf.comparison.IComparisonFilter;
-import com.exactpro.th2.common.grpc.FilterOperation;
-
-public interface IOperationFilter extends IComparisonFilter {
-    FilterOperation getOperation();
+class ToSailfishParameters(
+    val allowUnknownEnumValues: Boolean = false,
+    val useMarkerForNullsInMessage: Boolean = false
+) {
+    companion object {
+        val DEFAULT = ToSailfishParameters()
+    }
 }
