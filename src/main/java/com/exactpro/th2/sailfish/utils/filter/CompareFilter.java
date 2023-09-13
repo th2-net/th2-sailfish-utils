@@ -161,6 +161,10 @@ public class CompareFilter extends AbstractNotNullFilter {
         if (second instanceof LocalDate || second instanceof LocalDateTime || second instanceof LocalTime) {
             throw new IllegalArgumentException(String.format("Failed to compare Temporal values {%s}, {%s}", first, second));
         }
+
+        // There only 3 possible types for numbers: BigDecimal, BigInteger, Long
+        // If none of them is passed to this method then something went wrong
+
         var result = compareWithTransformation(BigDecimal.class, first, second, it -> new BigDecimal(it.toString()));
         if (result.matchType) {
             return result.comparisonResult;
@@ -169,7 +173,13 @@ public class CompareFilter extends AbstractNotNullFilter {
         if (result.matchType) {
             return result.comparisonResult;
         }
-        return Long.valueOf(first.toString()).compareTo(Long.valueOf(second.toString()));
+        result = compareWithTransformation(Long.class, first, second, it -> Long.valueOf(it.toString()));
+        if (result.matchType) {
+            return result.comparisonResult;
+        }
+        throw new IllegalArgumentException(
+                String.format("comparison of %s and %s is not supported", first.getClass(), second.getClass())
+        );
     }
 
     @Override
