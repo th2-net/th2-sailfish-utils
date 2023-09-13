@@ -46,8 +46,10 @@ import com.exactpro.th2.sailfish.utils.ToSailfishParameters
 import com.exactpro.th2.sailfish.utils.UnknownEnumException
 import com.exactpro.th2.sailfish.utils.filter.util.FilterUtils.NULL_VALUE
 import com.exactpro.th2.sailfish.utils.filter.util.FilterUtils.NullValue
+import com.exactpro.th2.sailfish.utils.transport.converter.BigIntegerConverter
 import mu.KotlinLogging
 import org.apache.commons.lang3.BooleanUtils
+import java.math.BigInteger
 import java.util.EnumMap
 import java.util.function.BiFunction
 
@@ -141,6 +143,7 @@ class TransportToIMessageConverter @JvmOverloads constructor(
     private fun Any?.traverseField(fieldName: String): Any? {
         return when (this) {
             null -> nullValue()
+            is BigInteger -> BigIntegerConverter.convertToString(this)
             is Number -> MultiConverter.convert(this, String::class.java)
             is String -> this
             is Map<*, *> -> convertWithoutDictionary(fieldName)
@@ -286,8 +289,12 @@ class TransportToIMessageConverter @JvmOverloads constructor(
         private fun <T> convertJavaType(value: Any, javaType: JavaType): T {
             val converter = CONVERTERS[javaType]
                 ?: throw ConversionException("No converter for type: " + javaType.value())
+
             @Suppress("UNCHECKED_CAST")
-            return converter.convert(value) as T
+            return when (value) {
+                is BigInteger -> BigIntegerConverter.convert(value, javaType)
+                else -> converter.convert(value)
+            }  as T
         }
     }
 }

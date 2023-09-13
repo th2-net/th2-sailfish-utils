@@ -21,6 +21,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.text.DecimalFormatSymbols;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -51,7 +52,11 @@ public class FilterUtils {
         if (value.contains(DEFAULT_DECIMAL_SEPARATOR)) {
             return new BigDecimal(value);
         }
-        return Long.parseLong(value);
+        try {
+            return Long.parseLong(value);
+        } catch (NumberFormatException ex) {
+            return new BigInteger(value);
+        }
     }
 
     @Nullable

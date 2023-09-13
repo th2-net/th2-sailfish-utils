@@ -21,6 +21,7 @@ import com.exactpro.th2.sailfish.utils.FilterSettings;
 import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 
 public class DecimalFilterWithPrecision extends AbstractFilterWithPrecision {
 
@@ -38,15 +39,23 @@ public class DecimalFilterWithPrecision extends AbstractFilterWithPrecision {
         try {
             if (value instanceof String) {
                 return new BigDecimal((String) value);
-            } else if (value instanceof BigDecimal) {
+            }
+            if (value instanceof BigDecimal) {
                 return (BigDecimal) value;
-            } else if (value instanceof Float) {
+            }
+            if (value instanceof BigInteger) {
+                return new BigDecimal(((BigInteger) value));
+            }
+            if (value instanceof Float) {
                 return BigDecimal.valueOf((Float) value);
-            } else if (value instanceof Double) {
+            }
+            if (value instanceof Double) {
                 return BigDecimal.valueOf((Double) value);
-            } else if (value instanceof Short) {
+            }
+            if (value instanceof Short) {
                 return new BigDecimal((Short) value);
-            } else if (value instanceof Integer) {
+            }
+            if (value instanceof Integer) {
                 return new BigDecimal((Integer) value);
             }
             throw new IllegalArgumentException("Value cannot be converted to decimal value. Value = " + value);
