@@ -16,11 +16,13 @@
 package com.exactpro.th2.sailfish.utils.filter;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.util.Objects;
+import java.util.function.Function;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -82,7 +84,7 @@ public class CompareFilter extends AbstractNotNullFilter {
         Comparable<?> tmpValue;
         if (isNumber) {
             try {
-                tmpValue = Objects.requireNonNull(FilterUtils.convertNumberValue(value));
+                tmpValue = Objects.requireNonNull(FilterUtils.convertNumberValue((String) value));
             } catch (NumberFormatException e) {
                 throw new IllegalArgumentException("Failed to parse value to Number. Value = " + value, e);
             }
@@ -148,6 +150,9 @@ public class CompareFilter extends AbstractNotNullFilter {
             if (first instanceof BigDecimal) {
                 return ((BigDecimal)first).compareTo((BigDecimal)second);
             }
+            if (first instanceof BigInteger) {
+                return ((BigInteger) first).compareTo((BigInteger) second);
+            }
             return ((Long)first).compareTo((Long)second);
         }
         if (first instanceof LocalDate || first instanceof LocalDateTime || first instanceof LocalTime) {
@@ -156,17 +161,62 @@ public class CompareFilter extends AbstractNotNullFilter {
         if (second instanceof LocalDate || second instanceof LocalDateTime || second instanceof LocalTime) {
             throw new IllegalArgumentException(String.format("Failed to compare Temporal values {%s}, {%s}", first, second));
         }
-        if (first instanceof BigDecimal) {
-            return ((BigDecimal)first).compareTo(new BigDecimal(second.toString()));
+
+        // There only 3 possible types for numbers: BigDecimal, BigInteger, Long
+        // If none of them is passed to this method then something went wrong
+
+        var result = compareWithTransformation(BigDecimal.class, first, second, it -> new BigDecimal(it.toString()));
+        if (result.matchType) {
+            return result.comparisonResult;
         }
-        if (second instanceof BigDecimal) {
-            return new BigDecimal(first.toString()).compareTo((BigDecimal)second);
+        result = compareWithTransformation(BigInteger.class, first, second, it -> new BigInteger(it.toString()));
+        if (result.matchType) {
+            return result.comparisonResult;
         }
-        return ((Long)first).compareTo((Long)second);
+        result = compareWithTransformation(Long.class, first, second, it -> Long.valueOf(it.toString()));
+        if (result.matchType) {
+            return result.comparisonResult;
+        }
+        throw new IllegalArgumentException(
+                String.format("comparison of %s and %s is not supported", first.getClass(), second.getClass())
+        );
     }
 
     @Override
     public FilterOperation getOperation() {
         return operation;
+    }
+
+    private static class CompareResult {
+        private final boolean matchType;
+        private final int comparisonResult;
+
+        private CompareResult(boolean matchType, int result) {
+            this.matchType = matchType;
+            this.comparisonResult = result;
+        }
+    }
+
+    private static CompareResult match(int result) {
+        return new CompareResult(true, result);
+    }
+
+    private static CompareResult mismatch() {
+        return new CompareResult(false, 0);
+    }
+
+    private static <T extends Comparable<T>> CompareResult compareWithTransformation(
+            Class<T> type,
+            Object first,
+            Object second,
+            Function<Object, T> transform
+    ) {
+        if (type.isInstance(first)) {
+            return match(type.cast(first).compareTo(transform.apply(second)));
+        }
+        if (type.isInstance(second)) {
+            return match(transform.apply(first).compareTo(type.cast(second)));
+        }
+        return mismatch();
     }
 }
